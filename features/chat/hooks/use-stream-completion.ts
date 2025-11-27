@@ -23,7 +23,7 @@ async function* getCompletion(prompt: string, signal: AbortSignal) {
   }
 }
 
-export default function useCompletionRQ() {
+export default function useStreamCompletion() {
   const id = useId();
   const queryClient = useQueryClient();
   const [abortController, setAbortController] =
