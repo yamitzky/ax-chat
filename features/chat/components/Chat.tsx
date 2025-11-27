@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Bot, User } from "lucide-react"
-import useCompletionRQ from "@/hooks/use-completion"
+import useCompletionRQ from "@/features/chat/hooks/use-completion"
 
 type Message = {
   role: 'user' | 'assistant'
