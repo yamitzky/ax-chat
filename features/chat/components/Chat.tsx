@@ -14,7 +14,7 @@ import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
 import { ThinkingDisplay } from "./ThinkingDisplay"
 
 export default function Chat() {
-  const [provider, setProvider] = useState<LLMProvider>('sonnet')
+  const [provider, setProvider] = useState<LLMProvider>('gemini-flash')
   const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend } = useChat({ provider, useWebSearch: true });
   const scrollRef = useScrollToBottom([messages, completion, thinking, isLoading]);
 
