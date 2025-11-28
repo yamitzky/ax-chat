@@ -3,12 +3,12 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { AVAILABLE_PROVIDERS, LLMProvider } from "@/lib/model-types"
 import { Bot, Send, User } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useChat } from "../hooks/use-chat"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
 import { ThinkingDisplay } from "./ThinkingDisplay"
@@ -17,6 +17,27 @@ export default function Chat() {
   const [provider, setProvider] = useState<LLMProvider>('gemini-flash')
   const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend } = useChat({ provider, useWebSearch: true });
   const scrollRef = useScrollToBottom([messages, completion, thinking, isLoading]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 自動リサイズ機能
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // リセットしてから再計算
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [inputValue]);
+
+  // キーボードイベントハンドラー
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl+Enter (または Cmd+Enter on Mac) で送信
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend(e as unknown as React.FormEvent);
+    }
+    // Enterキーはデフォルト動作（改行）を許可
+  };
 
   return (
     <Card className="w-full max-w-2xl mx-auto h-[600px] flex flex-col shadow-xl border-zinc-200 dark:border-zinc-800 bg-card/50 backdrop-blur-sm">
@@ -106,12 +127,15 @@ export default function Chat() {
       </CardContent>
       <CardFooter className="p-4 border-t bg-background/50">
         <form onSubmit={handleSend} className="flex w-full gap-2 items-end">
-          <Input
-            placeholder="Type your message..."
+          <Textarea
+            ref={textareaRef}
+            placeholder="Type your message... (Ctrl+Enter to send)"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
-            className="flex-1 bg-background focus-visible:ring-primary/20"
+            rows={1}
+            className="flex-1 bg-background focus-visible:ring-primary/20 resize-none min-h-[40px] max-h-[200px]"
           />
           <Button type="submit" disabled={isLoading || !inputValue.trim()} size="icon" className="shrink-0">
             <Send className="w-4 h-4" />
