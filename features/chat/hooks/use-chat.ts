@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Message } from '../types';
 import useStreamCompletion from './use-stream-completion';
-import type { LLMProvider } from '@/lib/ai-client';
+import type { LLMProvider } from '@/lib/model-types';
 
 export function useChat(options?: {
   provider?: LLMProvider;

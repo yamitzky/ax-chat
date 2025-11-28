@@ -1,5 +1,6 @@
 import { AxAIAnthropicVertexModel, AxAIGoogleGeminiModel, ai } from '@ax-llm/ax'
 import { GoogleAuth } from 'google-auth-library'
+import { LLMProvider } from './model-types'
 
 const googleAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
@@ -13,14 +14,6 @@ const getGoogleToken = async () => {
   }
   return accessToken.token
 }
-
-export type LLMProvider =
-  | 'gemini-pro'
-  | 'gemini-flash'
-  | 'gemini-pro3'
-  | 'sonnet'
-  | 'opus'
-  | 'haiku'
 
 const MODEL_MAP = {
   'gemini-pro': AxAIGoogleGeminiModel.Gemini25Pro,

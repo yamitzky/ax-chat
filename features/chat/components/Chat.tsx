@@ -8,20 +8,36 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Bot, Send, User } from "lucide-react"
 import { useChat } from "../hooks/use-chat"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
+import { useState } from "react"
+import { AVAILABLE_PROVIDERS, LLMProvider } from "@/lib/model-types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Chat() {
-  const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({ provider: 'sonnet', useWebSearch: true });
+  const [provider, setProvider] = useState<LLMProvider>('sonnet')
+  const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({ provider, useWebSearch: true });
   const scrollRef = useScrollToBottom([messages, completion, isLoading]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto h-[600px] flex flex-col shadow-xl border-zinc-200 dark:border-zinc-800 bg-card/50 backdrop-blur-sm">
-      <CardHeader className="border-b p-4 bg-muted/30">
+      <CardHeader className="border-b p-4 bg-muted/30 flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-full">
             <Bot className="w-5 h-5 text-primary" />
           </div>
           <span className="font-bold text-lg">AI Chat Assistant</span>
         </CardTitle>
+        <Select value={provider} onValueChange={(value: LLMProvider) => setProvider(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select LLM Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            {AVAILABLE_PROVIDERS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent className="flex-1 p-0 overflow-hidden relative">
         <ScrollArea className="h-full p-4">

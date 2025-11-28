@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import type { LLMProvider } from "@/lib/ai-client";
+import type { LLMProvider } from "@/lib/model-types";
 
 type CompletionOptions = {
   provider?: LLMProvider;

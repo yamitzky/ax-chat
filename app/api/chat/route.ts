@@ -1,5 +1,6 @@
 import { ax } from '@ax-llm/ax'
-import { getLlmClient, type LLMProvider } from '@/lib/ai-client'
+import { getLlmClient } from '@/lib/ai-client'
+import { LLMProvider } from '@/lib/model-types'
 import { NextRequest } from 'next/server'
 
 const encoder = new TextEncoder()
