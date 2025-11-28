@@ -66,7 +66,7 @@ export default function Chat() {
                 </Avatar>
                 <div className="flex flex-col max-w-[85%]">
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap ${
+                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground rounded-br-none'
                         : 'bg-muted/80 text-foreground rounded-bl-none border'
@@ -89,7 +89,7 @@ export default function Chat() {
                    <AvatarFallback className="bg-muted"><Bot className="w-4 h-4" /></AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col max-w-[85%]">
-                  <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm whitespace-pre-wrap">
+                  <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm whitespace-pre-wrap break-words">
                     {completion}
                     <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse"/>
                   </div>

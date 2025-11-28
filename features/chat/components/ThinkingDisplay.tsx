@@ -32,11 +32,11 @@ export function ThinkingDisplay({ thinking, isStreaming }: ThinkingDisplayProps)
           <ChevronRight className="w-3 h-3 mr-1" />
         )}
         <Sparkles className="w-3 h-3 mr-1" />
-        {isExpanded ? 'Thinking' : lastLine}
+        {isExpanded ? 'Thinking' : <span className="truncate max-w-[300px] inline-block text-left">{lastLine}</span>}
       </Button>
 
       {isExpanded && (
-        <div className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap pl-6">
+        <div className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap break-words pl-6">
           {thinking}
           {isStreaming && (
             <span className="inline-block w-1 h-3 ml-1 bg-purple-500/50 animate-pulse" />
