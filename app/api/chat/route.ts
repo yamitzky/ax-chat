@@ -1,45 +1,64 @@
+import { ax } from '@ax-llm/ax'
+import { getLlmClient, type LLMProvider } from '@/lib/ai-client'
+import { NextRequest } from 'next/server'
 
-function iteratorToStream(iterator: AsyncIterator<Uint8Array>) {
-  return new ReadableStream({
-    async pull(controller) {
-      const { value, done } = await iterator.next()
- 
-      if (done) {
-        controller.close()
-      } else {
-        controller.enqueue(value)
-      }
-    },
-  })
-}
- 
-function sleep(time: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, time)
-  })
-}
- 
 const encoder = new TextEncoder()
- 
-async function* makeIterator() {
-  yield encoder.encode('Hello! ')
-  await sleep(100)
-  yield encoder.encode('I am ')
-  await sleep(100)
-  yield encoder.encode('a demo ')
-  await sleep(100)
-  yield encoder.encode('AI assistant. ')
-  await sleep(100)
-  yield encoder.encode('I can help you ')
-  await sleep(100)
-  yield encoder.encode('with various tasks. ')
-  await sleep(100)
-  yield encoder.encode('How can I help you today?')
-}
- 
-export async function POST() {
-  const iterator = makeIterator()
-  const stream = iteratorToStream(iterator)
- 
-  return new Response(stream)
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { prompt, provider = 'gemini-flash', useWebSearch = false } = body as {
+      prompt: string
+      provider?: LLMProvider
+      useWebSearch?: boolean
+    }
+
+    if (!prompt) {
+      return new Response(
+        JSON.stringify({ error: 'Prompt is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // LLMクライアントを取得
+    const llm = getLlmClient(provider, { useWebSearch })
+
+    // ax-llmのシグネチャを定義
+    const chatter = ax(`question:string -> answer:string`)
+
+    // ストリーミングレスポンスを作成
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // streamingForwardでストリーミング実行
+          const axStream = chatter.streamingForward(llm, { question: prompt })
+
+          for await (const chunk of axStream) {
+            if (chunk.delta.answer) {
+              // テキストをエンコードしてストリームに送信
+              controller.enqueue(encoder.encode(chunk.delta.answer))
+            }
+          }
+
+          controller.close()
+        } catch (error) {
+          console.error('Streaming error:', error)
+          controller.error(error)
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    })
+  } catch (error) {
+    console.error('API error:', error)
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 }

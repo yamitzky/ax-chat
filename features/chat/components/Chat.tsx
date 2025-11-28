@@ -1,16 +1,16 @@
 'use client'
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Send, Bot, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Bot, Send, User } from "lucide-react"
 import { useChat } from "../hooks/use-chat"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
 
 export default function Chat() {
-  const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat();
+  const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({ provider: 'sonnet', useWebSearch: true });
   const scrollRef = useScrollToBottom([messages, completion, isLoading]);
 
   return (

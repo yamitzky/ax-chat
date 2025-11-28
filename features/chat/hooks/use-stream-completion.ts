@@ -1,18 +1,32 @@
 import { useId, useState } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import type { LLMProvider } from "@/lib/ai-client";
 
-async function* getCompletion(prompt: string, signal: AbortSignal) {
+type CompletionOptions = {
+  provider?: LLMProvider;
+  useWebSearch?: boolean;
+};
+
+async function* getCompletion(
+  prompt: string,
+  signal: AbortSignal,
+  options?: CompletionOptions
+) {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({
+      prompt,
+      provider: options?.provider,
+      useWebSearch: options?.useWebSearch,
+    }),
     signal,
   });
 
   if (!response.body) throw new Error('No body');
-  
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
@@ -23,7 +37,7 @@ async function* getCompletion(prompt: string, signal: AbortSignal) {
   }
 }
 
-export default function useStreamCompletion() {
+export default function useStreamCompletion(options?: CompletionOptions) {
   const id = useId();
   const queryClient = useQueryClient();
   const [abortController, setAbortController] =
@@ -49,13 +63,14 @@ export default function useStreamCompletion() {
 
       // Clear previous completion
       queryClient.setQueryData(["completion", id], "");
-      
+
       let fullResponse = "";
 
       try {
         for await (const token of getCompletion(
           prompt,
           signal,
+          options,
         )) {
           queryClient.setQueryData<string>(
             ["completion", id],
@@ -66,7 +81,7 @@ export default function useStreamCompletion() {
       } finally {
         setAbortController(null);
       }
-      
+
       return fullResponse;
     },
   });

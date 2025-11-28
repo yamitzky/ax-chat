@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Message } from '../types';
 import useStreamCompletion from './use-stream-completion';
+import type { LLMProvider } from '@/lib/ai-client';
 
-export function useChat() {
+export function useChat(options?: {
+  provider?: LLMProvider;
+  useWebSearch?: boolean;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  
+
   // API通信フック (useStreamCompletion)
-  const { mutateAsync, completion, isLoading } = useStreamCompletion();
+  const { mutateAsync, completion, isLoading } = useStreamCompletion(options);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

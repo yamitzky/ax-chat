@@ -1,8 +1,47 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+このプロジェクトは、AI チャットアプリケーションです。Google Vertex AI (Gemini) または Anthropic Claude (via Vertex AI) を使用してストリーミングチャットを実現しています。
 
-First, run the development server:
+## セットアップ
+
+### 1. 依存関係のインストール
+
+```bash
+pnpm install
+```
+
+### 2. 環境変数の設定
+
+`.env.example` を `.env` にコピーして、必要な値を設定します。
+
+```bash
+cp .env.example .env
+```
+
+`.env` ファイルを編集:
+
+```bash
+GOOGLE_PROJECT_ID=your-project-id
+GOOGLE_LOCATION=asia-northeast1
+```
+
+### 3. Google Cloud 認証の設定
+
+Google Cloud のApplication Default Credentials (ADC) を設定します。
+
+```bash
+# オプション1: gcloud CLI を使用
+gcloud auth application-default login
+
+# オプション2: サービスアカウントキーを使用する場合
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json を .env に追加
+```
+
+必要な権限:
+- Vertex AI User (Gemini を使用する場合)
+- Vertex AI User (Claude を使用する場合)
+
+### 4. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -14,11 +53,59 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いてアプリケーションにアクセスします。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 技術スタック
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: Next.js (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Components**: shadcn/ui
+- **State Management**: TanStack React Query
+- **AI SDK**: ax-llm (Google Gemini / Anthropic Claude)
+
+## プロジェクト構造
+
+```
+axchat/
+├── app/
+│   ├── api/
+│   │   └── chat/
+│   │       └── route.ts          # ストリーミングAPIエンドポイント
+│   ├── page.tsx                  # メインページ
+│   └── layout.tsx
+├── features/
+│   └── chat/
+│       ├── components/
+│       │   └── Chat.tsx          # チャットUI (View)
+│       ├── hooks/
+│       │   ├── use-chat.ts       # チャットロジック (Facade Hook)
+│       │   ├── use-stream-completion.ts  # ストリーミングAPI通信
+│       │   └── use-scroll-to-bottom.ts   # スクロール制御
+│       └── types/
+│           └── index.ts          # 型定義
+├── lib/
+│   └── ai-client.ts              # AI クライアント設定
+└── components/
+    └── ui/                       # 共通UIコンポーネント
+```
+
+## アーキテクチャ
+
+このプロジェクトは Feature-based Architecture と Separation of Concerns を採用しています。
+
+詳細は `AGENTS.md` を参照してください。
+
+## カスタマイズ
+
+デフォルトでは `gemini-flash` モデルを使用します。別のモデルを使用する場合は、`use-chat.ts` のオプションを変更してください:
+
+```typescript
+const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({
+  provider: 'sonnet',  // 'gemini-pro', 'gemini-flash', 'sonnet', 'opus', 'haiku'
+  useWebSearch: true,  // Web検索を有効化
+});
+```
 
 ## Learn More
 
