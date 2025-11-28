@@ -11,6 +11,7 @@ import { Bot, Send, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useChat } from "../hooks/use-chat"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
+import { MarkdownMessage } from "./MarkdownMessage"
 import { ThinkingDisplay } from "./ThinkingDisplay"
 
 export default function Chat() {
@@ -87,13 +88,17 @@ export default function Chat() {
                 </Avatar>
                 <div className="flex flex-col max-w-[85%]">
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
+                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm wrap-break-word ${
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                        ? 'bg-primary text-primary-foreground rounded-br-none whitespace-pre-wrap'
                         : 'bg-muted/80 text-foreground rounded-bl-none border'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   {/* アシスタントメッセージのthinking表示 */}
                   {msg.role === 'assistant' && msg.thinking && (
@@ -110,8 +115,8 @@ export default function Chat() {
                    <AvatarFallback className="bg-muted"><Bot className="w-4 h-4" /></AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col max-w-[85%]">
-                  <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm whitespace-pre-wrap break-words">
-                    {completion}
+                  <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm wrap-break-word">
+                    <MarkdownMessage content={completion} />
                     <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse"/>
                   </div>
                   {/* リアルタイムthought表示 */}
