@@ -1,7 +1,6 @@
 'use client'
 
 import { Card } from "@/components/ui/card"
-import type { LLMProvider } from "@/lib/model-types"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useChat } from "../hooks/use-chat"
@@ -16,11 +15,9 @@ type Props = {
 
 export default function Chat({ sessionId = null }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [provider, setProvider] = useState<LLMProvider>('gemini-flash');
 
-  const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend } = useChat({
+  const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend, provider, handleProviderChange } = useChat({
     sessionId,
-    provider,
     useWebSearch: true,
   });
 
@@ -40,7 +37,7 @@ export default function Chat({ sessionId = null }: Props) {
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
             provider={provider}
-            onProviderChange={setProvider}
+            onProviderChange={handleProviderChange}
           />
 
           <ChatMessages

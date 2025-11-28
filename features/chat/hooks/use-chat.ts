@@ -8,18 +8,17 @@ import { generateTitle } from '../utils/title-generator';
 
 export function useChat(options?: {
   sessionId?: string | null;
-  provider?: LLMProvider;
   useWebSearch?: boolean;
 }) {
   const router = useRouter();
   const currentSessionId = options?.sessionId ?? null;
-  const provider = options?.provider ?? 'gemini-flash';
   const useWebSearch = options?.useWebSearch ?? true;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [provider, setProvider] = useState<LLMProvider>('gemini-flash');
 
   // 自動送信済みフラグ
   const autoSentRef = useRef(false);
@@ -34,6 +33,7 @@ export function useChat(options?: {
     if (prevSessionIdRef.current !== currentSessionId) {
       setIsInitialized(false);
       autoSentRef.current = false;
+      setProvider('gemini-flash');
       prevSessionIdRef.current = currentSessionId;
     }
   }, [currentSessionId]);
@@ -42,6 +42,7 @@ export function useChat(options?: {
   useEffect(() => {
     if (session && !isInitialized) {
       setMessages(session.messages);
+      setProvider(session.metadata.provider);
       setIsInitialized(true);
     } else if (!session && currentSessionId && !isInitialized) {
       // セッションIDがあるがDBにない場合（まだロード中の可能性があるので何もしない）
@@ -49,6 +50,7 @@ export function useChat(options?: {
       // トップページ（セッションなし）
       setMessages([]);
       setInputValue("");
+      setProvider('gemini-flash');
       setIsInitialized(false);
     }
   }, [session, currentSessionId, isInitialized]);
@@ -201,6 +203,22 @@ export function useChat(options?: {
     }
   }, [inputValue, isLoading, isCreatingSession, currentSessionId, messages, provider, useWebSearch, router, mutateAsync, session]);
 
+  const handleProviderChange = useCallback(async (newProvider: LLMProvider) => {
+    setProvider(newProvider);
+
+    // 既存セッションの場合、即座にDBに保存
+    if (session) {
+      await dbSaveSession({
+        ...session,
+        metadata: {
+          ...session.metadata,
+          provider: newProvider,
+          updatedAt: Date.now(),
+        },
+      });
+    }
+  }, [session]);
+
   return {
     messages,
     inputValue,
@@ -208,6 +226,8 @@ export function useChat(options?: {
     isLoading: isLoading || isCreatingSession,
     completion,
     thinking,
-    handleSend
+    handleSend,
+    provider,
+    handleProviderChange,
   };
 }
