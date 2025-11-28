@@ -46,3 +46,4 @@ export function ThinkingDisplay({ thinking, isStreaming }: ThinkingDisplayProps)
     </div>
   )
 }
+
