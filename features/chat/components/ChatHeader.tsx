@@ -15,25 +15,23 @@ type Props = {
 
 export function ChatHeader({ onToggleSidebar, provider, onProviderChange }: Props) {
   return (
-    <CardHeader className="flex-row items-center justify-between border-b p-4 bg-muted/30">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
-          <Menu className="w-5 h-5" />
+    <CardHeader className="!flex !flex-row items-center justify-between border-b px-3 py-2 bg-muted/30">
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggleSidebar}>
+          <Menu className="w-4 h-4" />
         </Button>
-        <CardTitle className="flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-full">
-            <Bot className="w-5 h-5 text-primary" />
-          </div>
-          <span className="font-bold text-lg">AI Chat Assistant</span>
+        <CardTitle className="flex items-center gap-1.5">
+          <Bot className="w-4 h-4 text-primary" />
+          <span className="font-semibold text-sm">AI Chat</span>
         </CardTitle>
       </div>
       <Select value={provider} onValueChange={(value: LLMProvider) => onProviderChange(value)}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select LLM Provider" />
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Select Provider" />
         </SelectTrigger>
         <SelectContent>
           {AVAILABLE_PROVIDERS.map((p) => (
-            <SelectItem key={p} value={p}>
+            <SelectItem key={p} value={p} className="text-xs">
               {p}
             </SelectItem>
           ))}

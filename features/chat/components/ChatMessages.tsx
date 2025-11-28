@@ -1,13 +1,40 @@
 'use client'
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, User } from "lucide-react"
+import { Bot, Check, Copy, User } from "lucide-react"
+import { useState, useCallback } from "react"
 import type { Message } from "../types"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
 import { MarkdownMessage } from "./MarkdownMessage"
 import { ThinkingDisplay } from "./ThinkingDisplay"
+
+function CopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [content]);
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <Copy className="h-3 w-3 text-muted-foreground" />
+      )}
+    </Button>
+  );
+}
 
 type Props = {
   messages: Message[];
@@ -35,7 +62,7 @@ export function ChatMessages({ messages, isLoading, completion, thinking }: Prop
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`flex gap-3 ${
+              className={`group flex gap-3 ${
                 msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
               }`}
             >
@@ -45,18 +72,22 @@ export function ChatMessages({ messages, isLoading, completion, thinking }: Prop
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col max-w-[85%]">
-                <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm wrap-break-word ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-none whitespace-pre-wrap'
-                      : 'bg-muted/80 text-foreground rounded-bl-none border'
-                  }`}
-                >
-                  {msg.role === 'assistant' ? (
-                    <MarkdownMessage content={msg.content} />
-                  ) : (
-                    msg.content
-                  )}
+                <div className="flex items-start gap-1">
+                  {msg.role === 'user' && <CopyButton content={msg.content} />}
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm wrap-break-word ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-none whitespace-pre-wrap'
+                        : 'bg-muted/80 text-foreground rounded-bl-none border'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                  {msg.role === 'assistant' && <CopyButton content={msg.content} />}
                 </div>
                 {/* アシスタントメッセージのthinking表示 */}
                 {msg.role === 'assistant' && msg.thinking && (
