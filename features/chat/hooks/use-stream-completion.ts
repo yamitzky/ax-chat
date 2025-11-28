@@ -1,14 +1,21 @@
 import { useId, useState } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import type { LLMProvider } from "@/lib/model-types";
+import type { Message } from "../types";
 
 type CompletionOptions = {
   provider?: LLMProvider;
   useWebSearch?: boolean;
 };
 
+type StreamingResponse = {
+  answer: string;
+  thought?: string;
+};
+
 async function* getCompletion(
   prompt: string,
+  history: Array<{ role: string; content: string }>,
   signal: AbortSignal,
   options?: CompletionOptions
 ) {
@@ -19,6 +26,7 @@ async function* getCompletion(
     },
     body: JSON.stringify({
       prompt,
+      history,
       provider: options?.provider,
       useWebSearch: options?.useWebSearch,
     }),
@@ -29,11 +37,31 @@ async function* getCompletion(
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    yield decoder.decode(value, { stream: true });
+    
+    // バッファに追加
+    buffer += decoder.decode(value, { stream: true });
+    
+    // 改行で分割してJSON行を処理
+    const lines = buffer.split('\n');
+    // 最後の不完全な行はバッファに保持
+    buffer = lines.pop() || '';
+    
+    // 完全な行を処理
+    for (const line of lines) {
+      if (line.trim()) {
+        yield line;
+      }
+    }
+  }
+  
+  // 最後の残りを処理
+  if (buffer.trim()) {
+    yield buffer;
   }
 }
 
@@ -43,17 +71,18 @@ export default function useStreamCompletion(options?: CompletionOptions) {
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
-  const { data: completion } = useQuery<string>({
-    queryKey: ["completion", id],
-    queryFn: () => "",
-    initialData: "",
+  // 単一のオブジェクトでstreamingResponseを管理
+  const { data: streamingResponse } = useQuery<StreamingResponse>({
+    queryKey: ["streaming-response", id],
+    queryFn: () => ({ answer: "", thought: "" }),
+    initialData: { answer: "", thought: "" },
     staleTime: Infinity,
     enabled: false,
   });
 
   const { mutate, mutateAsync, isPending, error } = useMutation({
     mutationKey: ["mutate-completion", id],
-    mutationFn: async (prompt: string) => {
+    mutationFn: async ({ prompt, history }: { prompt: string; history: Message[] }) => {
       if (abortController) {
         abortController.abort();
       }
@@ -61,30 +90,60 @@ export default function useStreamCompletion(options?: CompletionOptions) {
       const signal = controller.signal;
       setAbortController(controller);
 
-      // Clear previous completion
-      queryClient.setQueryData(["completion", id], "");
+      // キャッシュをクリア
+      queryClient.setQueryData(["streaming-response", id], { answer: "", thought: "" });
 
-      let fullResponse = "";
+      let fullAnswer = "";
+      let fullThought = "";
 
       try {
+        // historyをAPI形式に変換
+        const apiHistory = history.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
         for await (const token of getCompletion(
           prompt,
+          apiHistory,
           signal,
           options,
         )) {
-          queryClient.setQueryData<string>(
-            ["completion", id],
-            (prev) => (prev ? prev + token : token),
-          );
-          fullResponse += token;
+          try {
+            const delta = JSON.parse(token);
+
+            if (delta.answer) {
+              fullAnswer += delta.answer;
+            }
+
+            if (delta.thought) {
+              fullThought += delta.thought;
+            }
+
+            // オブジェクトごと更新
+            queryClient.setQueryData<StreamingResponse>(
+              ["streaming-response", id],
+              { answer: fullAnswer, thought: fullThought || undefined }
+            );
+          } catch (parseError) {
+            // JSONパースエラーは無視（不完全なデータの可能性）
+            console.warn('Failed to parse JSON line:', parseError);
+          }
         }
       } finally {
         setAbortController(null);
       }
 
-      return fullResponse;
+      return { answer: fullAnswer, thought: fullThought || undefined };
     },
   });
 
-  return { mutate, mutateAsync, completion, error, isLoading: isPending };
+  return {
+    mutate,
+    mutateAsync,
+    completion: streamingResponse.answer,
+    thinking: streamingResponse.thought,
+    error,
+    isLoading: isPending
+  };
 }

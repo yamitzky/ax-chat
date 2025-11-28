@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AVAILABLE_PROVIDERS, LLMProvider } from "@/lib/model-types"
 import { Bot, Send, User } from "lucide-react"
+import { useState } from "react"
 import { useChat } from "../hooks/use-chat"
 import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
-import { useState } from "react"
-import { AVAILABLE_PROVIDERS, LLMProvider } from "@/lib/model-types"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ThinkingDisplay } from "./ThinkingDisplay"
 
 export default function Chat() {
   const [provider, setProvider] = useState<LLMProvider>('sonnet')
-  const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({ provider, useWebSearch: true });
-  const scrollRef = useScrollToBottom([messages, completion, isLoading]);
+  const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend } = useChat({ provider, useWebSearch: true });
+  const scrollRef = useScrollToBottom([messages, completion, thinking, isLoading]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto h-[600px] flex flex-col shadow-xl border-zinc-200 dark:border-zinc-800 bg-card/50 backdrop-blur-sm">
@@ -63,14 +64,20 @@ export default function Chat() {
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
-                <div
-                  className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-muted/80 text-foreground rounded-bl-none border'
-                  }`}
-                >
-                  {msg.content}
+                <div className="flex flex-col max-w-[85%]">
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                        : 'bg-muted/80 text-foreground rounded-bl-none border'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                  {/* アシスタントメッセージのthinking表示 */}
+                  {msg.role === 'assistant' && msg.thinking && (
+                    <ThinkingDisplay thinking={msg.thinking} />
+                  )}
                 </div>
               </div>
             ))}
@@ -81,9 +88,15 @@ export default function Chat() {
                 <Avatar className="w-8 h-8 border shadow-sm">
                    <AvatarFallback className="bg-muted"><Bot className="w-4 h-4" /></AvatarFallback>
                 </Avatar>
-                <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 max-w-[85%] text-sm border shadow-sm whitespace-pre-wrap">
-                  {completion}
-                  <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse"/>
+                <div className="flex flex-col max-w-[85%]">
+                  <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm whitespace-pre-wrap">
+                    {completion}
+                    <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse"/>
+                  </div>
+                  {/* リアルタイムthought表示 */}
+                  {thinking && (
+                    <ThinkingDisplay thinking={thinking} isStreaming={true} />
+                  )}
                 </div>
               </div>
             )}

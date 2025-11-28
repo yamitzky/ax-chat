@@ -1,6 +1,6 @@
-import { ax } from '@ax-llm/ax'
 import { getLlmClient } from '@/lib/ai-client'
 import { LLMProvider } from '@/lib/model-types'
+import { ax } from '@ax-llm/ax'
 import { NextRequest } from 'next/server'
 
 const encoder = new TextEncoder()
@@ -8,8 +8,9 @@ const encoder = new TextEncoder()
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, provider = 'gemini-flash', useWebSearch = false } = body as {
+    const { prompt, history = [], provider = 'gemini-flash', useWebSearch = false } = body as {
       prompt: string
+      history?: Array<{ role: string; content: string }>
       provider?: LLMProvider
       useWebSearch?: boolean
     }
@@ -24,21 +25,23 @@ export async function POST(request: NextRequest) {
     // LLMクライアントを取得
     const llm = getLlmClient(provider, { useWebSearch })
 
-    // ax-llmのシグネチャを定義
-    const chatter = ax(`question:string -> answer:string`)
+    // ax-llmのシグネチャを定義（historyを追加、showThoughtsでthoughtが自動追加される）
+    const chatter = ax(`history?:json[], question:string -> answer:string`)
 
     // ストリーミングレスポンスを作成
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // streamingForwardでストリーミング実行
-          const axStream = chatter.streamingForward(llm, { question: prompt })
+          // streamingForwardでストリーミング実行（showThoughtsを有効化）
+          const axStream = chatter.streamingForward(
+            llm,
+            { history, question: prompt },
+            { showThoughts: true }
+          )
 
           for await (const chunk of axStream) {
-            if (chunk.delta.answer) {
-              // テキストをエンコードしてストリームに送信
-              controller.enqueue(encoder.encode(chunk.delta.answer))
-            }
+            // JSON Lines形式でdeltaをそのまま送信（answerとthoughtが含まれる）
+            controller.enqueue(encoder.encode(JSON.stringify(chunk.delta) + '\n'))
           }
 
           controller.close()
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/x-ndjson; charset=utf-8',
         'Transfer-Encoding': 'chunked',
       },
     })

@@ -1,7 +1,7 @@
+import type { LLMProvider } from '@/lib/model-types';
 import { useState } from 'react';
 import { Message } from '../types';
 import useStreamCompletion from './use-stream-completion';
-import type { LLMProvider } from '@/lib/model-types';
 
 export function useChat(options?: {
   provider?: LLMProvider;
@@ -11,7 +11,7 @@ export function useChat(options?: {
   const [inputValue, setInputValue] = useState("");
 
   // API通信フック (useStreamCompletion)
-  const { mutateAsync, completion, isLoading } = useStreamCompletion(options);
+  const { mutateAsync, completion, thinking, isLoading } = useStreamCompletion(options);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -26,8 +26,18 @@ export function useChat(options?: {
     setInputValue("");
 
     try {
-      const response = await mutateAsync(prompt);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      // 現在の履歴をAPIに送信
+      const history = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      const result = await mutateAsync({ prompt, history });
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: result.answer,
+        thinking: result.thought  // thoughtを保存
+      }]);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { role: 'assistant', content: "Error: Failed to get response." }]);
@@ -40,6 +50,7 @@ export function useChat(options?: {
     setInputValue,
     isLoading,
     completion,
+    thinking,  // リアルタイムのthoughtを公開
     handleSend
   };
 }
