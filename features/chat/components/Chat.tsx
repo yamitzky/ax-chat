@@ -20,6 +20,11 @@ export default function Chat() {
   const scrollRef = useScrollToBottom([messages, completion, thinking, isLoading]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // ページ読み込み時に自動フォーカス
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
   // 自動リサイズ機能
   useEffect(() => {
     const textarea = textareaRef.current;
