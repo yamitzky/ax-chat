@@ -16,7 +16,7 @@ type Props = {
 export default function Chat({ sessionId = null }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { messages, inputValue, setInputValue, isLoading, handleSend, llmProvider, handleProviderChange } = useChat({
+  const { messages, inputValue, setInputValue, isLoading, handleSend, handleAbort, llmProvider, handleProviderChange } = useChat({
     sessionId,
     useWebSearch: true,
   });
@@ -50,6 +50,7 @@ export default function Chat({ sessionId = null }: Props) {
             setInputValue={setInputValue}
             isLoading={isLoading}
             onSubmit={handleSend}
+            onAbort={handleAbort}
           />
         </Card>
       </div>

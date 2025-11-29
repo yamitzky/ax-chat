@@ -21,6 +21,7 @@ export function useChat(options?: {
   const {
     sendMessage,
     isStreaming,
+    abort,
   } = useSendMessage({ llmProvider, useWebSearch });
 
   const { updateLLMProvider } = useUpdateLLMProvider();
@@ -62,6 +63,7 @@ export function useChat(options?: {
     setInputValue,
     isLoading: isStreaming,
     handleSend,
+    handleAbort: abort,
     llmProvider,
     handleProviderChange: handleLLMProviderChange,
   };

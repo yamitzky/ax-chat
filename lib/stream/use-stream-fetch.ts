@@ -49,10 +49,17 @@ export function useStreamFetch<TRequest, TResponse>() {
     [controller]
   );
 
+  const abort = useCallback(() => {
+    if (controller) {
+      controller.abort();
+    }
+  }, [controller]);
+
   return {
     fetchStream,
     data: data,
     isStreaming: isStreaming,
+    abort,
   };
 }
 

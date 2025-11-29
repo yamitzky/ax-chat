@@ -27,7 +27,7 @@ type ChatResponse = {
 export function useSendMessage(options: SendMessageOptions) {
   const router = useRouter();
   const repository = useChatRepository();
-  const { fetchStream, isStreaming } = useStreamFetch<ChatRequest, ChatResponse>();
+  const { fetchStream, isStreaming, abort } = useStreamFetch<ChatRequest, ChatResponse>();
 
   const sendMessage = useCallback(
     async (
@@ -95,5 +95,6 @@ export function useSendMessage(options: SendMessageOptions) {
   return {
     sendMessage,
     isStreaming,
+    abort,
   };
 }
