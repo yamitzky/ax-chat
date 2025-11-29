@@ -2,21 +2,20 @@
 
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
-import { useChat } from "../hooks/use-chat"
+import { useChat } from "../hooks/facade/use-chat"
 import { ChatHeader } from "./ChatHeader"
-import { ChatMessages } from "./ChatMessages"
 import { ChatInput } from "./ChatInput"
+import { ChatMessages } from "./ChatMessages"
 import { SessionSidebar } from "./SessionSidebar"
 
-type Props = {
-  sessionId?: string | null;
-};
-
-export default function Chat({ sessionId = null }: Props) {
+export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('sessionId');
 
-  const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend, provider, handleProviderChange } = useChat({
+  const { messages, inputValue, setInputValue, isLoading, handleSend, handleAbort, llmProvider, handleProviderChange } = useChat({
     sessionId,
     useWebSearch: true,
   });
@@ -36,15 +35,13 @@ export default function Chat({ sessionId = null }: Props) {
           <ChatHeader
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-            provider={provider}
+            provider={llmProvider}
             onProviderChange={handleProviderChange}
           />
 
           <ChatMessages
             messages={messages}
             isLoading={isLoading}
-            completion={completion}
-            thinking={thinking}
           />
 
           <ChatInput
@@ -52,6 +49,7 @@ export default function Chat({ sessionId = null }: Props) {
             setInputValue={setInputValue}
             isLoading={isLoading}
             onSubmit={handleSend}
+            onAbort={handleAbort}
           />
         </Card>
       </div>

@@ -1,5 +1,5 @@
-import { getLlmClient } from '@/lib/ai-client'
-import { LLMProvider } from '@/lib/model-types'
+import { getLlmClient } from '@/lib/ai/client'
+import { LLMProvider } from '@/lib/ai/providers'
 import { ax } from '@ax-llm/ax'
 import { NextRequest } from 'next/server'
 
@@ -8,10 +8,10 @@ const encoder = new TextEncoder()
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, history = [], provider = 'gemini-flash', useWebSearch = false } = body as {
+    const { prompt, history = [], llmProvider, useWebSearch = false } = body as {
       prompt: string
       history?: Array<{ role: string; content: string }>
-      provider?: LLMProvider
+      llmProvider?: LLMProvider
       useWebSearch?: boolean
     }
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // LLMクライアントを取得
-    const llm = getLlmClient(provider, { useWebSearch })
+    const llm = getLlmClient(llmProvider, { useWebSearch })
 
     // ax-llmのシグネチャを定義（historyを追加、showThoughtsでthoughtが自動追加される）
     const chatter = ax(`history?:json[], question:string -> answer:string`)

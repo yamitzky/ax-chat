@@ -1,6 +1,6 @@
 import { AxAIAnthropicVertexModel, AxAIGoogleGeminiModel, ai } from '@ax-llm/ax'
 import { GoogleAuth } from 'google-auth-library'
-import { LLMProvider } from './model-types'
+import { LLMProvider } from './providers'
 
 const googleAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],

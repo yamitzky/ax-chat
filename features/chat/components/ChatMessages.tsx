@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Bot, Check, Copy, User } from "lucide-react"
 import { useState, useCallback } from "react"
 import type { Message } from "../types"
-import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
+import { useScrollToBottom } from "@/lib/hooks/use-scroll-to-bottom"
 import { MarkdownMessage } from "./MarkdownMessage"
 import { ThinkingDisplay } from "./ThinkingDisplay"
 
@@ -39,12 +39,10 @@ function CopyButton({ content }: { content: string }) {
 type Props = {
   messages: Message[];
   isLoading: boolean;
-  completion: string;
-  thinking?: string;
 };
 
-export function ChatMessages({ messages, isLoading, completion, thinking }: Props) {
-  const scrollRef = useScrollToBottom([messages, completion, thinking, isLoading]);
+export function ChatMessages({ messages, isLoading }: Props) {
+  const scrollRef = useScrollToBottom([messages, isLoading]);
 
   return (
     <CardContent className="flex-1 p-0 overflow-hidden relative">
@@ -59,7 +57,10 @@ export function ChatMessages({ messages, isLoading, completion, thinking }: Prop
             </div>
           )}
 
-          {messages.map((msg, index) => (
+          {messages.map((msg, index) => {
+            const isStreaming = isLoading && index === messages.length - 1 && msg.role === 'assistant';
+
+            return (
             <div
               key={index}
               className={`group flex gap-3 ${
@@ -82,7 +83,12 @@ export function ChatMessages({ messages, isLoading, completion, thinking }: Prop
                     }`}
                   >
                     {msg.role === 'assistant' ? (
+                        <>
                       <MarkdownMessage content={msg.content} />
+                          {isStreaming && (
+                            <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse" />
+                          )}
+                        </>
                     ) : (
                       msg.content
                     )}
@@ -91,30 +97,12 @@ export function ChatMessages({ messages, isLoading, completion, thinking }: Prop
                 </div>
                 {/* アシスタントメッセージのthinking表示 */}
                 {msg.role === 'assistant' && msg.thinking && (
-                  <ThinkingDisplay thinking={msg.thinking} />
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {/* Streaming Response Display */}
-          {isLoading && (
-            <div className="flex gap-3 flex-row">
-              <Avatar className="w-8 h-8 border shadow-sm">
-                 <AvatarFallback className="bg-muted"><Bot className="w-4 h-4" /></AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col max-w-[85%]">
-                <div className="bg-muted/80 text-foreground rounded-2xl rounded-bl-none px-4 py-2.5 text-sm border shadow-sm wrap-break-word">
-                  <MarkdownMessage content={completion} />
-                  <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse"/>
+                    <ThinkingDisplay thinking={msg.thinking} isStreaming={isStreaming} />
+                  )}
                 </div>
-                {/* リアルタイムthought表示 */}
-                {thinking && (
-                  <ThinkingDisplay thinking={thinking} isStreaming={true} />
-                )}
               </div>
-            </div>
-          )}
+            );
+          })}
           <div ref={scrollRef} />
         </div>
       </ScrollArea>
