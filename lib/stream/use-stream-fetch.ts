@@ -9,7 +9,13 @@ export function useStreamFetch<TRequest, TResponse>() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   const fetchStream = useCallback(
-    async (url: string, request: TRequest) => {
+    async (
+      url: string,
+      request: TRequest,
+      options?: {
+        onStream?: (delta: Partial<TResponse>, accumulated: TResponse) => void | Promise<void>;
+      }
+    ) => {
       if (controller) controller.abort();
       const newController = new AbortController();
       setController(newController);
@@ -29,6 +35,9 @@ export function useStreamFetch<TRequest, TResponse>() {
         for await (const delta of generator) {
           accumulated = mergeDeep(accumulated, delta as Record<string, unknown>);
           setData(accumulated as TResponse);
+
+          // 各チャンク受信時にcallbackを呼び出す
+          await options?.onStream?.(delta, accumulated as TResponse);
         }
 
         return accumulated as TResponse;

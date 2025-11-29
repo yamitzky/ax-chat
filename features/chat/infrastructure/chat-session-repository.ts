@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
  */
 export interface ChatSessionRepository extends SessionRepository<ChatSessionData> {
   addMessage(message: Message): Promise<void>;
+  updateMessage(id: string, updates: Partial<Message>): Promise<void>;
   getMessages(sessionId: string): Promise<Message[]>;
 }
 
@@ -32,6 +33,10 @@ export const chatSessionRepository: ChatSessionRepository = {
 
   addMessage: async (message: Message) => {
     await db.messages.add(message);
+  },
+
+  updateMessage: async (id: string, updates: Partial<Message>) => {
+    await db.messages.update(id, updates);
   },
 
   getMessages: async (sessionId: string) => {

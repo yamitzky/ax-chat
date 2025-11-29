@@ -3,10 +3,9 @@ import { useSessionRepository } from '@/lib/session/repository';
 import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
+import type { ChatSessionRepository } from '../infrastructure/chat-session-repository';
 import type { ChatSession, ChatSessionData, Message } from '../types';
 import { generateTitle } from '../utils/title-generator';
-import { db } from '@/lib/db';
-import type { ChatSessionRepository } from '../infrastructure/chat-session-repository';
 
 type SendMessageOptions = {
   llmProvider: LLMProvider;  // より明確な命名
@@ -28,7 +27,7 @@ type ChatResponse = {
 export function useSendMessage(options: SendMessageOptions) {
   const router = useRouter();
   const repository = useSessionRepository<ChatSessionData>() as ChatSessionRepository; // チャット専用Repository
-  const { fetchStream, data, isStreaming } = useStreamFetch<ChatRequest, ChatResponse>();
+  const { fetchStream, isStreaming } = useStreamFetch<ChatRequest, ChatResponse>();
 
   const sendMessage = useCallback(
     async (
@@ -45,17 +44,48 @@ export function useSendMessage(options: SendMessageOptions) {
           router
         );
       }
-      // 2. 以降は共通のフロー
+
+      // 2. ユーザーメッセージを保存
       const userMessage: Partial<Message> = { role: 'user', content };
       await appendMessage(session, userMessage, repository);
-      const aiMessage = await streamMessage(
-        content,
-        session.id,
-        options,
-        fetchStream
+
+      // 3. ストリーミング実行（onStream内でDB更新）
+      const history = await repository.getMessages(session.id);
+
+      // AIメッセージをoptimistic update
+      const streamingMessageId = crypto.randomUUID();
+      await repository.addMessage({
+        id: streamingMessageId,
+        sessionId: session.id,
+        role: 'assistant',
+        content: '',
+        createdAt: Date.now(),
+      });
+
+      await fetchStream(
+        '/api/chat',
+        {
+          prompt: content,
+          history: history.map((msg) => ({ role: msg.role, content: msg.content })),
+          llmProvider: options.llmProvider,
+          useWebSearch: options.useWebSearch,
+        },
+        {
+          onStream: async (_, accumulated) => {
+            // 各チャンク受信時にDB更新
+            await repository.updateMessage(streamingMessageId, {
+              content: accumulated.answer || '',
+              thinking: accumulated.thought,
+            });
+          },
+        }
       );
 
-      await appendMessage(session, aiMessage, repository);
+      // 4. セッションの updatedAt を更新
+      await repository.save({
+        ...session,
+        metadata: { ...session.metadata, updatedAt: Date.now() },
+      });
 
       return session.id;
     },
@@ -64,8 +94,6 @@ export function useSendMessage(options: SendMessageOptions) {
 
   return {
     sendMessage,
-    completion: data?.answer ?? '',
-    thinking: data?.thought,
     isStreaming,
   };
 }
@@ -99,33 +127,6 @@ async function createAndNavigateToSession(
   return newSession;
 }
 
-// ヘルパー関数: ストリーミングでAIメッセージ取得
-async function streamMessage(
-  content: string,
-  sessionId: string,
-  options: SendMessageOptions,
-  fetchStream: (url: string, req: ChatRequest) => Promise<ChatResponse>
-): Promise<Partial<Message>> {
-  // メッセージを直接DBから取得
-  const history = await db.messages
-    .where('sessionId')
-    .equals(sessionId)
-    .sortBy('createdAt');
-
-  const result = await fetchStream('/api/chat', {
-    prompt: content,
-    history: history.map((msg) => ({ role: msg.role, content: msg.content })),
-    llmProvider: options.llmProvider,
-    useWebSearch: options.useWebSearch,
-  });
-
-  return {
-    role: 'assistant',
-    content: result.answer,
-    thinking: result.thought,
-  };
-}
-
 // ヘルパー関数: メッセージをセッションに追加保存
 async function appendMessage(
   session: ChatSession,
@@ -141,11 +142,9 @@ async function appendMessage(
     thinking: message.thinking,
   };
 
-  await db.transaction('rw', [db.messages, db.chatSessions], async () => {
-    await repository.addMessage(messageWithMeta);
-    await repository.save({
-      ...session,
-      metadata: { ...session.metadata, updatedAt: Date.now() },
-    });
+  await repository.addMessage(messageWithMeta);
+  await repository.save({
+    ...session,
+    metadata: { ...session.metadata, updatedAt: Date.now() },
   });
 }
