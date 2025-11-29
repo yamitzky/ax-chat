@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AVAILABLE_PROVIDERS, type LLMProvider } from "@/lib/model-types"
+import { AVAILABLE_PROVIDERS, type LLMProvider } from "@/lib/ai/providers"
 import { Bot, Menu } from "lucide-react"
 
 type Props = {

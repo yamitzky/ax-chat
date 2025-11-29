@@ -1,5 +1,5 @@
-import { getLlmClient } from '@/lib/ai-client'
-import { LLMProvider } from '@/lib/model-types'
+import { getLlmClient } from '@/lib/ai/client'
+import { LLMProvider } from '@/lib/ai/providers'
 import { ax } from '@ax-llm/ax'
 import { NextRequest } from 'next/server'
 

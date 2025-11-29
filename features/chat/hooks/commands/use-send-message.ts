@@ -1,11 +1,11 @@
-import type { LLMProvider } from '@/lib/model-types';
-import { useSessionRepository } from '@/lib/session/repository';
+import type { LLMProvider } from '@/lib/ai/providers';
 import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import type { ChatSessionRepository } from '../infrastructure/chat-session-repository';
-import type { ChatSession, ChatSessionData, Message } from '../types';
-import { generateTitle } from '../utils/title-generator';
+import type { ChatSession, Message } from '../../types';
+import { createAndNavigateToSession } from '../../services/session-creator';
+import { appendMessage } from '../../services/message-appender';
+import { useChatRepository } from '../use-chat-repository';
 
 type SendMessageOptions = {
   llmProvider: LLMProvider;  // より明確な命名
@@ -26,7 +26,7 @@ type ChatResponse = {
 
 export function useSendMessage(options: SendMessageOptions) {
   const router = useRouter();
-  const repository = useSessionRepository<ChatSessionData>() as ChatSessionRepository; // チャット専用Repository
+  const repository = useChatRepository();
   const { fetchStream, isStreaming } = useStreamFetch<ChatRequest, ChatResponse>();
 
   const sendMessage = useCallback(
@@ -96,55 +96,4 @@ export function useSendMessage(options: SendMessageOptions) {
     sendMessage,
     isStreaming,
   };
-}
-
-// ヘルパー関数: 新規セッション作成とナビゲーション
-async function createAndNavigateToSession(
-  content: string,
-  options: SendMessageOptions,
-  repository: ChatSessionRepository,
-  router: ReturnType<typeof useRouter>
-): Promise<ChatSession> {
-  const now = Date.now();
-  const newSessionId = crypto.randomUUID();
-
-  const newSession: ChatSession = {
-    id: newSessionId,
-    title: generateTitle(content),
-    data: {
-      llmProvider: options.llmProvider,
-      useWebSearch: options.useWebSearch,
-    },
-    metadata: {
-      createdAt: now,
-      updatedAt: now,
-    },
-  };
-
-  await repository.create(newSession);
-  router.replace(`/${newSessionId}`);
-
-  return newSession;
-}
-
-// ヘルパー関数: メッセージをセッションに追加保存
-async function appendMessage(
-  session: ChatSession,
-  message: Partial<Message>,
-  repository: ChatSessionRepository
-): Promise<void> {
-  const messageWithMeta: Message = {
-    id: crypto.randomUUID(),
-    sessionId: session.id,
-    createdAt: Date.now(),
-    role: message.role!,
-    content: message.content!,
-    thinking: message.thinking,
-  };
-
-  await repository.addMessage(messageWithMeta);
-  await repository.save({
-    ...session,
-    metadata: { ...session.metadata, updatedAt: Date.now() },
-  });
 }

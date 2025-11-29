@@ -1,6 +1,6 @@
-import { db } from '@/lib/db';
+import { db } from '../../infrastructure/db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { ChatSession, Message } from '../types';
+import type { ChatSession, Message } from '../../types';
 
 /**
  * セッションとメッセージを同時に取得するフック

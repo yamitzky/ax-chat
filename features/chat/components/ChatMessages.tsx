@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Bot, Check, Copy, User } from "lucide-react"
 import { useState, useCallback } from "react"
 import type { Message } from "../types"
-import { useScrollToBottom } from "../hooks/use-scroll-to-bottom"
+import { useScrollToBottom } from "@/lib/hooks/use-scroll-to-bottom"
 import { MarkdownMessage } from "./MarkdownMessage"
 import { ThinkingDisplay } from "./ThinkingDisplay"
 

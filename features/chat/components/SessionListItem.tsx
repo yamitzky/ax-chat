@@ -5,7 +5,7 @@ import { Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SessionListItem as SessionListItemType } from '../types';
 import { SessionTitleEditor } from './SessionTitleEditor';
-import { useSessions } from '../hooks/use-sessions';
+import { useSessions } from '../hooks/facade/use-sessions';
 
 type Props = {
   session: SessionListItemType;

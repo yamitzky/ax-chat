@@ -9,6 +9,7 @@ export function useScrollToBottom(dependencies: React.DependencyList) {
 
   useEffect(() => {
     scrollToBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   return messagesEndRef;

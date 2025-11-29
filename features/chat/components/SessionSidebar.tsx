@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useSessions } from '../hooks/use-sessions';
+import { useSessions } from '../hooks/facade/use-sessions';
 import { SessionListItem } from './SessionListItem';
 import { NewSessionButton } from './NewSessionButton';
 

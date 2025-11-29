@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
-import { useChat } from "../hooks/use-chat"
+import { useChat } from "../hooks/facade/use-chat"
 import { ChatHeader } from "./ChatHeader"
 import { ChatInput } from "./ChatInput"
 import { ChatMessages } from "./ChatMessages"

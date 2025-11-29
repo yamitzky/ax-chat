@@ -1,4 +1,4 @@
-import type { LLMProvider } from '@/lib/model-types';
+import type { LLMProvider } from '@/lib/ai/providers';
 import type { Session } from '@/lib/session/types';
 
 // 再エクスポート

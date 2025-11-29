@@ -1,10 +1,10 @@
-import type { LLMProvider } from '@/lib/model-types';
-import { useSessionRepository } from '@/lib/session/repository';
+import type { LLMProvider } from '@/lib/ai/providers';
 import { useCallback } from 'react';
-import type { ChatSession, ChatSessionData } from '../types';
+import type { ChatSession } from '../../types';
+import { useChatRepository } from '../use-chat-repository';
 
 export function useUpdateLLMProvider() {
-  const repository = useSessionRepository<ChatSessionData>();
+  const repository = useChatRepository();
 
   const updateLLMProvider = useCallback(
     async (session: ChatSession, newProvider: LLMProvider) => {

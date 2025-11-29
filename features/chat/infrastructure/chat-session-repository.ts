@@ -1,6 +1,6 @@
 import type { SessionRepository } from '@/lib/session/repository';
 import type { ChatSession, ChatSessionData, Message } from '../types';
-import { db } from '@/lib/db';
+import { db } from './db';
 
 /**
  * チャット専用のRepository（メッセージ操作を含む）

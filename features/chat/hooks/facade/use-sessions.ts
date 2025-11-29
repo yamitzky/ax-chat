@@ -1,12 +1,12 @@
-import { useSessionRepository } from '@/lib/session/repository';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import type { ChatSessionData, SessionListItem } from '../types';
-import { useChatSessionList } from './use-chat-session-queries';
+import type { SessionListItem } from '../../types';
+import { useChatSessionList } from '../queries/use-chat-session-queries';
+import { useChatRepository } from '../use-chat-repository';
 
 export function useSessions() {
   const router = useRouter();
-  const repository = useSessionRepository<ChatSessionData>();
+  const repository = useChatRepository();
 
   // Dexie Live Query: セッション一覧（自動更新）
   const chatSessions = useChatSessionList();
