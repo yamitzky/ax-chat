@@ -30,7 +30,6 @@ AIエージェントや開発者がコードを変更・拡張する際の指針
     *   例: `features/chat/` にはチャット機能に関連するすべてが含まれます。
     *   **`components/`**: その機能固有のUIコンポーネント（View）。ロジックは極力持たせません。
     *   **`hooks/`**: その機能固有のロジック、状態管理、データフェッチ（詳細は後述）。
-    *   **`services/`**: ビジネスロジックを含む純粋関数。Hookから呼び出されます。
     *   **`infrastructure/`**: データベースアクセス、外部API連携などのインフラ層。
     *   **`types/`**: その機能固有の型定義。
     *   **`utils/`**: その機能固有のユーティリティ関数。
@@ -104,18 +103,11 @@ AIエージェントや開発者がコードを変更・拡張する際の指針
 
     3. **Command Hook (`commands/`)**:
        - データの更新・操作に特化（Write操作）
-       - ビジネスロジックを含む場合はServiceを呼び出す
        - 例: `useSendMessage`, `useUpdateLLMProvider`
 
     4. **型安全なRepository Hook**:
        - 汎用Repository hookに型キャストが必要な場合、専用hookを作成
        - 例: `useChatRepository` → 型キャスト不要で `ChatSessionRepository` を返す
-
-*   **Services (`services/`)**:
-    *   複雑なビジネスロジックは純粋関数として分離します。
-    *   Hookから呼び出されます。
-    *   単体テストが容易になります。
-    *   例: `session-creator.ts`, `message-appender.ts`
 
 ```typescript
 // features/chat/components/Chat.tsx (View)
@@ -266,53 +258,6 @@ await repository.addMessage(message);
 - 型キャスト（`as`）を各Hookで書く必要がない
 - ChatSessionRepository固有のメソッド（addMessage等）が型推論される
 - リファクタリング時の変更箇所が1箇所に集約される
-
-### 5. サービス層の分離
-
-複雑なビジネスロジックは、Hookから純粋関数として分離します。
-
-```typescript
-// features/chat/services/session-creator.ts
-export async function createAndNavigateToSession(
-  content: string,
-  options: CreateSessionOptions,
-  repository: ChatSessionRepository,
-  router: AppRouterInstance
-): Promise<ChatSession> {
-  const newSession = {
-    id: crypto.randomUUID(),
-    title: generateTitle(content),
-    data: { llmProvider: options.llmProvider, useWebSearch: options.useWebSearch },
-    metadata: { createdAt: Date.now(), updatedAt: Date.now() },
-  };
-
-  await repository.create(newSession);
-  router.replace(`/${newSession.id}`);
-  return newSession;
-}
-
-// features/chat/hooks/commands/use-send-message.ts で使用
-import { createAndNavigateToSession } from '../../services/session-creator';
-
-export function useSendMessage(options) {
-  const router = useRouter();
-  const repository = useChatRepository();
-
-  const sendMessage = useCallback(async (content, session) => {
-    if (!session) {
-      session = await createAndNavigateToSession(content, options, repository, router);
-    }
-    // ...
-  }, [repository, router, options]);
-
-  return { sendMessage };
-}
-```
-
-**メリット:**
-- ビジネスロジックが純粋関数化され、単体テストが容易
-- Hookが薄くなり、責務が明確になる
-- ロジックの再利用性が向上
 
 ### 6. UI/UX ベストプラクティス
 

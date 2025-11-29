@@ -1,10 +1,11 @@
 import type { LLMProvider } from '@/lib/ai/providers';
 import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
+import type { ChatSessionRepository } from '../../infrastructure/chat-session-repository';
 import type { ChatSession, Message } from '../../types';
-import { createAndNavigateToSession } from '../../services/session-creator';
-import { appendMessage } from '../../services/message-appender';
+import { generateTitle } from '../../utils/title-generator';
 import { useChatRepository } from '../use-chat-repository';
 
 type SendMessageOptions = {
@@ -97,4 +98,58 @@ export function useSendMessage(options: SendMessageOptions) {
     isStreaming,
     abort,
   };
+}
+
+export async function appendMessage(
+  session: ChatSession,
+  message: Partial<Message>,
+  repository: ChatSessionRepository
+): Promise<void> {
+  const messageWithMeta: Message = {
+    id: crypto.randomUUID(),
+    sessionId: session.id,
+    createdAt: Date.now(),
+    role: message.role!,
+    content: message.content!,
+    thinking: message.thinking,
+  };
+
+  await repository.addMessage(messageWithMeta);
+  await repository.save({
+    ...session,
+    metadata: { ...session.metadata, updatedAt: Date.now() },
+  });
+}
+
+type CreateSessionOptions = {
+  llmProvider: LLMProvider;
+  useWebSearch: boolean;
+};
+
+export async function createAndNavigateToSession(
+  content: string,
+  options: CreateSessionOptions,
+  repository: ChatSessionRepository,
+  router: AppRouterInstance
+): Promise<ChatSession> {
+  const now = Date.now();
+  const newSessionId = crypto.randomUUID();
+
+  const newSession: ChatSession = {
+    id: newSessionId,
+    title: generateTitle(content),
+    data: {
+      llmProvider: options.llmProvider,
+      useWebSearch: options.useWebSearch,
+    },
+    metadata: {
+      createdAt: now,
+      updatedAt: now,
+    },
+  };
+
+  await repository.create(newSession);
+  router.replace(`/${newSessionId}`);
+
+  return newSession;
 }
