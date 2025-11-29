@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useChat } from "../hooks/use-chat"
 import { ChatHeader } from "./ChatHeader"
-import { ChatMessages } from "./ChatMessages"
 import { ChatInput } from "./ChatInput"
+import { ChatMessages } from "./ChatMessages"
 import { SessionSidebar } from "./SessionSidebar"
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
 export default function Chat({ sessionId = null }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { messages, inputValue, setInputValue, isLoading, completion, thinking, handleSend, provider, handleProviderChange } = useChat({
+  const { messages, inputValue, setInputValue, isLoading, handleSend, llmProvider, handleProviderChange } = useChat({
     sessionId,
     useWebSearch: true,
   });
@@ -36,15 +36,13 @@ export default function Chat({ sessionId = null }: Props) {
           <ChatHeader
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-            provider={provider}
+            provider={llmProvider}
             onProviderChange={handleProviderChange}
           />
 
           <ChatMessages
             messages={messages}
             isLoading={isLoading}
-            completion={completion}
-            thinking={thinking}
           />
 
           <ChatInput

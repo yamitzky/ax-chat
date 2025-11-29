@@ -1,74 +1,54 @@
-import { useCallback } from 'react';
+import { useSessionRepository } from '@/lib/session/repository';
 import { useRouter } from 'next/navigation';
-import { useSessionList } from './use-session-db';
-import type { Session, SessionMetadata } from '../types';
-import {
-  createSession as dbCreateSession,
-  updateSession as dbUpdateSession,
-  saveSession as dbSaveSession,
-} from './use-session-db';
+import { useCallback } from 'react';
+import type { ChatSessionData, SessionListItem } from '../types';
+import { useChatSessionList } from './use-chat-session-queries';
 
 export function useSessions() {
   const router = useRouter();
+  const repository = useSessionRepository<ChatSessionData>();
 
   // Dexie Live Query: セッション一覧（自動更新）
-  const sessions = useSessionList() ?? [];
+  const chatSessions = useChatSessionList();
 
-  // セッション作成（初回メッセージ送信時に自動作成）
-  const createSession = useCallback(async (metadata: SessionMetadata): Promise<string> => {
-    const newSession: Session = {
-      id: crypto.randomUUID(),
-      title: "新しいチャット",
-      messages: [],
-      metadata,
-    };
-
-    await dbCreateSession(newSession);
-
-    // URLを新しいセッションに遷移
-    router.push(`/${newSession.id}`);
-
-    return newSession.id;
-  }, [router]);
+  // SessionListItem形式に変換（後方互換性のため）
+  const sessions: SessionListItem[] = chatSessions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    createdAt: s.metadata.createdAt,
+    updatedAt: s.metadata.updatedAt,
+    provider: s.data.llmProvider,
+  }));
 
   // セッション切り替え（URLを変更）
-  const switchSession = useCallback((sessionId: string) => {
-    router.push(`/${sessionId}`);
-  }, [router]);
-
-  // セッション更新（メッセージ保存時）- 全体を保存
-  const updateSessionData = useCallback(async (sessionId: string, changes: Partial<Session>) => {
-    await dbUpdateSession(sessionId, {
-      ...changes,
-      metadata: changes.metadata ? {
-        ...changes.metadata,
-        updatedAt: Date.now(),
-      } : undefined,
-    });
-  }, []);
-
-  // セッションを丸ごと保存
-  const saveFullSession = useCallback(async (session: Session) => {
-    await dbSaveSession({
-      ...session,
-      metadata: {
-        ...session.metadata,
-        updatedAt: Date.now(),
-      },
-    });
-  }, []);
+  const switchSession = useCallback(
+    (sessionId: string) => {
+      router.push(`/${sessionId}`);
+    },
+    [router]
+  );
 
   // タイトル更新
-  const updateTitle = useCallback(async (sessionId: string, title: string) => {
-    await dbUpdateSession(sessionId, { title });
-  }, []);
+  const updateTitle = useCallback(
+    async (sessionId: string, title: string) => {
+      const session = chatSessions.find((s) => s.id === sessionId);
+      if (!session) return;
+
+      await repository.save({
+        ...session,
+        title,
+        metadata: {
+          ...session.metadata,
+          updatedAt: Date.now(),
+        },
+      });
+    },
+    [chatSessions, repository]
+  );
 
   return {
     sessions,
-    createSession,
     switchSession,
-    updateSession: updateSessionData,
-    saveFullSession,
     updateTitle,
   };
 }

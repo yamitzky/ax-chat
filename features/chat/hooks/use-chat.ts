@@ -1,233 +1,86 @@
 import type { LLMProvider } from '@/lib/model-types';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import type { Message, Session } from '../types';
-import useStreamCompletion from './use-stream-completion';
-import { useSession, createSession as dbCreateSession, saveSession as dbSaveSession } from './use-session-db';
-import { generateTitle } from '../utils/title-generator';
+import { useCallback, useMemo, useState } from 'react';
+import { useChatSession } from './use-chat-session-queries';
+import { useSendMessage } from './use-send-message';
+import { useUpdateLLMProvider } from './use-update-llm-provider';
 
 export function useChat(options?: {
   sessionId?: string | null;
   useWebSearch?: boolean;
 }) {
-  const router = useRouter();
-  const currentSessionId = options?.sessionId ?? null;
+  const sessionId = options?.sessionId ?? null;
   const useWebSearch = options?.useWebSearch ?? true;
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [provider, setProvider] = useState<LLMProvider>('gemini-flash');
+  // 1. Query: セッション購読（DBがSSoT）
+  const session = useChatSession(sessionId);
 
-  // 自動送信済みフラグ
-  const autoSentRef = useRef(false);
-  // 前回のセッションIDを追跡
-  const prevSessionIdRef = useRef<string | null>(null);
+  // 2. セッション状態を直接参照
+  const dbMessages = session?.data.messages ?? [];
+  const llmProvider = session?.data.llmProvider ?? 'gemini-flash';
 
-  const session = useSession(currentSessionId);
-  const { mutateAsync, completion, thinking, isLoading } = useStreamCompletion({ provider, useWebSearch });
-
-  // セッションID変更時、初期化フラグをリセット
-  useEffect(() => {
-    if (prevSessionIdRef.current !== currentSessionId) {
-      setIsInitialized(false);
-      autoSentRef.current = false;
-      setProvider('gemini-flash');
-      prevSessionIdRef.current = currentSessionId;
-    }
-  }, [currentSessionId]);
-
-  // DBからメモリにロード
-  useEffect(() => {
-    if (session && !isInitialized) {
-      setMessages(session.messages);
-      setProvider(session.metadata.provider);
-      setIsInitialized(true);
-    } else if (!session && currentSessionId && !isInitialized) {
-      // セッションIDがあるがDBにない場合（まだロード中の可能性があるので何もしない）
-    } else if (!currentSessionId) {
-      // トップページ（セッションなし）
-      setMessages([]);
-      setInputValue("");
-      setProvider('gemini-flash');
-      setIsInitialized(false);
-    }
-  }, [session, currentSessionId, isInitialized]);
-
-  // 自動送信（初回セッション作成直後）
-  useEffect(() => {
-    if (!session || !isInitialized || autoSentRef.current || isLoading) return;
-
-    // メッセージが1件のみ & ユーザーメッセージのみ
-    if (session.messages.length === 1 && session.messages[0].role === 'user') {
-      autoSentRef.current = true;
-      const userMessage = session.messages[0];
-
-      (async () => {
-        try {
-          const result = await mutateAsync({
-            prompt: userMessage.content,
-            history: []
-          });
-
-          const newMessages: Message[] = [
-            userMessage,
-            {
-              role: 'assistant',
-              content: result.answer,
-              thinking: result.thought,
-            }
-          ];
-
-          setMessages(newMessages);
-
-          // DBに保存
-          await dbSaveSession({
-            ...session,
-            messages: newMessages,
-            metadata: {
-              ...session.metadata,
-              updatedAt: Date.now(),
-            },
-          });
-        } catch (err) {
-          console.error('Auto-send error:', err);
-          const errorMessages: Message[] = [
-            userMessage,
-            { role: 'assistant', content: "Error: Failed to get response." }
-          ];
-          setMessages(errorMessages);
-
-          // エラーメッセージもDBに保存
-          await dbSaveSession({
-            ...session,
-            messages: errorMessages,
-            metadata: {
-              ...session.metadata,
-              updatedAt: Date.now(),
-            },
-          });
-        }
-      })();
-    }
-  }, [session, isInitialized, isLoading, mutateAsync]);
-
-  const handleSend = useCallback(async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!inputValue.trim() || isLoading || isCreatingSession) return;
-
-    const prompt = inputValue;
-    const userMessage: Message = { role: 'user', content: prompt };
-
-    // 初回送信（セッション作成）
-    if (!currentSessionId) {
-      setIsCreatingSession(true);
-
-      try {
-        const now = Date.now();
-        const newSessionId = crypto.randomUUID();
-
-        const newSession: Session = {
-          id: newSessionId,
-          title: generateTitle(prompt),
-          messages: [userMessage],
-          metadata: {
-            provider,
-            useWebSearch,
-            createdAt: now,
-            updatedAt: now,
-          },
-        };
-
-        // DBに保存
-        await dbCreateSession(newSession);
-
-        // 入力をクリア
-        setInputValue("");
-
-        // URL遷移（自動送信は次のuseEffectで実行される）
-        router.push(`/${newSessionId}`);
-      } catch (err) {
-        console.error('Session creation error:', err);
-        alert('セッションの作成に失敗しました。もう一度お試しください。');
-      } finally {
-        setIsCreatingSession(false);
-      }
-
-      return;
-    }
-
-    // 既存セッションの通常送信
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue("");
-
-    try {
-      const history = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      const result = await mutateAsync({ prompt, history });
-
-      const newMessages: Message[] = [
-        ...messages,
-        userMessage,
-        {
-          role: 'assistant',
-          content: result.answer,
-          thinking: result.thought,
-        }
-      ];
-
-      setMessages(newMessages);
-
-      // DBに保存
-      if (session) {
-        await dbSaveSession({
-          ...session,
-          messages: newMessages,
-          metadata: {
-            ...session.metadata,
-            updatedAt: Date.now(),
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Send error:', err);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "Error: Failed to get response."
-      }]);
-    }
-  }, [inputValue, isLoading, isCreatingSession, currentSessionId, messages, provider, useWebSearch, router, mutateAsync, session]);
-
-  const handleProviderChange = useCallback(async (newProvider: LLMProvider) => {
-    setProvider(newProvider);
-
-    // 既存セッションの場合、即座にDBに保存
-    if (session) {
-      await dbSaveSession({
-        ...session,
-        metadata: {
-          ...session.metadata,
-          provider: newProvider,
-          updatedAt: Date.now(),
-        },
-      });
-    }
-  }, [session]);
-
-  return {
-    messages,
-    inputValue,
-    setInputValue,
-    isLoading: isLoading || isCreatingSession,
+  // 3. Operations
+  const {
+    sendMessage,
     completion,
     thinking,
+    isStreaming,
+  } = useSendMessage({ llmProvider, useWebSearch });
+
+  const { updateLLMProvider } = useUpdateLLMProvider();
+
+  // 4. UI状態
+  const [inputValue, setInputValue] = useState('');
+
+  // 5. 表示用メッセージ（DB + ストリーミング中のメッセージ）
+  const messages = useMemo(() => {
+    if (!isStreaming) return dbMessages;
+
+    // ストリーミング中は、一時的なアシスタントメッセージを追加
+    return [
+      ...dbMessages,
+      {
+        role: 'assistant' as const,
+        content: completion,
+        thinking,
+      },
+    ];
+  }, [dbMessages, isStreaming, completion, thinking]);
+
+  // メッセージ送信ハンドラー
+  const handleSend = useCallback(
+    async (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      if (!inputValue.trim() || isStreaming) return;
+
+      const content = inputValue;
+      setInputValue(''); // 楽観的にクリア
+
+      try {
+        await sendMessage(content, session);
+      } catch (err) {
+        console.error('Send error:', err);
+        // エラー時は inputValue を復元してもいい
+      }
+    },
+    [inputValue, isStreaming, sendMessage, session]
+  );
+
+  // LLMプロバイダー変更ハンドラー
+  const handleLLMProviderChange = useCallback(
+    async (newProvider: LLMProvider) => {
+      if (!session) return;
+      await updateLLMProvider(session, newProvider);
+    },
+    [session, updateLLMProvider]
+  );
+
+  return {
+    messages, // ストリーミング中のメッセージを含む
+    inputValue,
+    setInputValue,
+    isLoading: isStreaming,
     handleSend,
-    provider,
-    handleProviderChange,
+    llmProvider,
+    handleProviderChange: handleLLMProviderChange,
   };
 }

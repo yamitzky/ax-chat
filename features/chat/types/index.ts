@@ -1,4 +1,5 @@
 import type { LLMProvider } from '@/lib/model-types';
+import type { Session } from '@/lib/session/types';
 
 export type Message = {
   role: 'user' | 'assistant';
@@ -6,20 +7,23 @@ export type Message = {
   thinking?: string;  // AIの思考プロセス（オプショナル）
 };
 
-export type SessionMetadata = {
-  provider: LLMProvider;
-  useWebSearch: boolean;
-  createdAt: number;  // Unix timestamp
-  updatedAt: number;
-};
-
-export type Session = {
-  id: string;
-  title: string;
+/**
+ * チャットセッションのデータ型
+ */
+export interface ChatSessionData {
   messages: Message[];
-  metadata: SessionMetadata;
-};
+  llmProvider: LLMProvider;  // より明確な命名
+  useWebSearch: boolean;
+}
 
+/**
+ * チャットセッション型（汎用Session型を使用）
+ */
+export type ChatSession = Session<ChatSessionData>;
+
+/**
+ * セッション一覧アイテム型（後方互換性のため保持）
+ */
 export type SessionListItem = {
   id: string;
   title: string;
