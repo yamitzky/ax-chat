@@ -13,7 +13,7 @@ export interface SessionRepository<TData = unknown> {
 /**
  * Context for Dependency Injection
  */
-export const SessionRepositoryContext = createContext<SessionRepository<any> | null>(null);
+export const SessionRepositoryContext = createContext<SessionRepository<unknown> | null>(null);
 
 /**
  * Repository hook for Dependency Injection

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useChatSession } from './use-chat-session-queries';
 import { useSendMessage } from './use-send-message';
 import { useUpdateLLMProvider } from './use-update-llm-provider';
+import type { Message } from '../types';
 
 export function useChat(options?: {
   sessionId?: string | null;
@@ -12,10 +13,9 @@ export function useChat(options?: {
   const useWebSearch = options?.useWebSearch ?? true;
 
   // 1. Query: セッション購読（DBがSSoT）
-  const session = useChatSession(sessionId);
+  const { session, messages: dbMessages } = useChatSession(sessionId);
 
   // 2. セッション状態を直接参照
-  const dbMessages = session?.data.messages ?? [];
   const llmProvider = session?.data.llmProvider ?? 'gemini-flash';
 
   // 3. Operations
@@ -36,15 +36,17 @@ export function useChat(options?: {
     if (!isStreaming) return dbMessages;
 
     // ストリーミング中は、一時的なアシスタントメッセージを追加
-    return [
-      ...dbMessages,
-      {
-        role: 'assistant' as const,
-        content: completion,
-        thinking,
-      },
-    ];
-  }, [dbMessages, isStreaming, completion, thinking]);
+    const streamingMessage: Message = {
+      id: 'streaming',
+      sessionId: sessionId || '',
+      role: 'assistant',
+      content: completion,
+      thinking,
+      createdAt: Date.now(),
+    };
+
+    return [...dbMessages, streamingMessage];
+  }, [dbMessages, isStreaming, completion, thinking, sessionId]);
 
   // メッセージ送信ハンドラー
   const handleSend = useCallback(

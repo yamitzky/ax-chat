@@ -25,13 +25,13 @@ export function useStreamFetch<TRequest, TResponse>() {
           signal: newController.signal,
         });
 
-        let accumulated = {} as TResponse;
+        let accumulated = {} as Record<string, unknown>;
         for await (const delta of generator) {
-          accumulated = mergeDeep(accumulated, delta);
-          setData(accumulated);
+          accumulated = mergeDeep(accumulated, delta as Record<string, unknown>);
+          setData(accumulated as TResponse);
         }
 
-        return accumulated;
+        return accumulated as TResponse;
       } finally {
         setController(null);
         setIsStreaming(false);
@@ -98,13 +98,13 @@ async function* fetchJSONStream<T>(
   }
 }
 
-function mergeDeep<T>(target: any, source: any): T {
+function mergeDeep<T>(target: Record<string, unknown>, source: Record<string, unknown>): T {
   if (typeof target !== 'object' || target === null) {
-    return source;
+    return source as T;
   }
-  
+
   const result = { ...target };
-  
+
   for (const key in source) {
     const targetValue = result[key];
     const sourceValue = source[key];
@@ -112,7 +112,7 @@ function mergeDeep<T>(target: any, source: any): T {
     if (typeof targetValue === 'string' && typeof sourceValue === 'string') {
       result[key] = targetValue + sourceValue;
     } else if (typeof targetValue === 'object' && targetValue !== null && typeof sourceValue === 'object' && sourceValue !== null) {
-      result[key] = mergeDeep(targetValue, sourceValue);
+      result[key] = mergeDeep(targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>);
     } else {
       result[key] = sourceValue;
     }

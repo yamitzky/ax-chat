@@ -1,17 +1,22 @@
 import type { LLMProvider } from '@/lib/model-types';
 import type { Session } from '@/lib/session/types';
 
+// 再エクスポート
+export type { Session };
+
 export type Message = {
+  id: string;  // メッセージID
+  sessionId: string;  // セッションへの外部キー
   role: 'user' | 'assistant';
   content: string;
   thinking?: string;  // AIの思考プロセス（オプショナル）
+  createdAt: number;  // メッセージの作成順序を保証
 };
 
 /**
  * チャットセッションのデータ型
  */
 export interface ChatSessionData {
-  messages: Message[];
   llmProvider: LLMProvider;  // より明確な命名
   useWebSearch: boolean;
 }
