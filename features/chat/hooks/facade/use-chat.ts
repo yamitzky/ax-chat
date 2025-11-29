@@ -1,8 +1,8 @@
 import type { LLMProvider } from '@/lib/ai/providers';
 import { useCallback, useState } from 'react';
-import { useChatSession } from '../queries/use-chat-session-queries';
 import { useSendMessage } from '../commands/use-send-message';
 import { useUpdateLLMProvider } from '../commands/use-update-llm-provider';
+import { useChatSession } from '../queries/use-chat-session-queries';
 
 export function useChat(options?: {
   sessionId?: string | null;

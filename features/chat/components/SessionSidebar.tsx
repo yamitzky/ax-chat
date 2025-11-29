@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useSessions } from '../hooks/facade/use-sessions';
@@ -13,11 +13,11 @@ type Props = {
 };
 
 export function SessionSidebar({ isOpen, onClose }: Props) {
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { sessions, switchSession } = useSessions();
 
-  // 現在のセッションIDをURLから取得
-  const currentSessionId = pathname === '/' ? null : pathname.slice(1);
+  // 現在のセッションIDをURLパラメータから取得
+  const currentSessionId = searchParams.get('sessionId');
 
   return (
     <>

@@ -1,6 +1,5 @@
 import type { LLMProvider } from '@/lib/ai/providers';
 import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import type { ChatSessionRepository } from '../../infrastructure/chat-session-repository';
@@ -35,14 +34,22 @@ export function useSendMessage(options: SendMessageOptions) {
       content: string,
       currentSession: ChatSession | undefined  // ChatSession型を使用
     ): Promise<string> => {
-      // 1. セッション確定（新規なら作成して遷移）
+      // 1. セッション確定（新規なら事前にIDを決定してURL変更）
       let session = currentSession;
+
       if (!session) {
-        session = await createAndNavigateToSession(
+        // セッションIDを事前に生成
+        const preSessionId = crypto.randomUUID();
+
+        // URLパラメータにsessionIdを追加して遷移
+        router.replace(`/?sessionId=${preSessionId}`);
+
+        // セッションを作成（事前生成したIDを使用）
+        session = await createSessionWithId(
+          preSessionId,
           content,
           options,
-          repository,
-          router
+          repository
         );
       }
 
@@ -126,17 +133,16 @@ type CreateSessionOptions = {
   useWebSearch: boolean;
 };
 
-export async function createAndNavigateToSession(
+export async function createSessionWithId(
+  sessionId: string,
   content: string,
   options: CreateSessionOptions,
-  repository: ChatSessionRepository,
-  router: AppRouterInstance
+  repository: ChatSessionRepository
 ): Promise<ChatSession> {
   const now = Date.now();
-  const newSessionId = crypto.randomUUID();
 
   const newSession: ChatSession = {
-    id: newSessionId,
+    id: sessionId,
     title: generateTitle(content),
     data: {
       llmProvider: options.llmProvider,
@@ -149,7 +155,6 @@ export async function createAndNavigateToSession(
   };
 
   await repository.create(newSession);
-  router.replace(`/${newSessionId}`);
 
   return newSession;
 }

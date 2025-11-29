@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useChat } from "../hooks/facade/use-chat"
 import { ChatHeader } from "./ChatHeader"
@@ -9,12 +10,10 @@ import { ChatInput } from "./ChatInput"
 import { ChatMessages } from "./ChatMessages"
 import { SessionSidebar } from "./SessionSidebar"
 
-type Props = {
-  sessionId?: string | null;
-};
-
-export default function Chat({ sessionId = null }: Props) {
+export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('sessionId');
 
   const { messages, inputValue, setInputValue, isLoading, handleSend, handleAbort, llmProvider, handleProviderChange } = useChat({
     sessionId,

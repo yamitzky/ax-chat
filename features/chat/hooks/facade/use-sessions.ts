@@ -20,10 +20,10 @@ export function useSessions() {
     provider: s.data.llmProvider,
   }));
 
-  // セッション切り替え（URLを変更）
+  // セッション切り替え（URLパラメータでsessionIdを管理）
   const switchSession = useCallback(
     (sessionId: string) => {
-      router.push(`/${sessionId}`);
+      router.push(`/?sessionId=${sessionId}`);
     },
     [router]
   );

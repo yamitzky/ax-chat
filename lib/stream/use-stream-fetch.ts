@@ -5,7 +5,6 @@ import { useCallback, useState } from 'react';
  */
 export function useStreamFetch<TRequest, TResponse>() {
   const [controller, setController] = useState<AbortController | null>(null);
-  const [data, setData] = useState<TResponse | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
 
   const fetchStream = useCallback(
@@ -21,7 +20,6 @@ export function useStreamFetch<TRequest, TResponse>() {
       setController(newController);
 
       setIsStreaming(true);
-      setData(null);
 
       try {
         const generator = fetchJSONStream<TResponse>(url, {
@@ -34,7 +32,6 @@ export function useStreamFetch<TRequest, TResponse>() {
         let accumulated = {} as Record<string, unknown>;
         for await (const delta of generator) {
           accumulated = mergeDeep(accumulated, delta as Record<string, unknown>);
-          setData(accumulated as TResponse);
 
           // 各チャンク受信時にcallbackを呼び出す
           await options?.onStream?.(delta, accumulated as TResponse);
@@ -57,7 +54,6 @@ export function useStreamFetch<TRequest, TResponse>() {
 
   return {
     fetchStream,
-    data: data,
     isStreaming: isStreaming,
     abort,
   };
