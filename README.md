@@ -1,123 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# axchat
 
-このプロジェクトは、AI チャットアプリケーションです。Google Vertex AI (Gemini) または Anthropic Claude (via Vertex AI) を使用してストリーミングチャットを実現しています。
+> Demo of an AI chat application leveraging @ax-llm/ax
 
-## セットアップ
+This is an AI chat application using [@ax-llm/ax](https://axllm.dev/). It supports multiple LLM providers (Gemini, Claude) via Google Vertex AI and features streaming responses and client-side persistence using IndexedDB (via Dexie.js).
 
-### 1. 依存関係のインストール
+## Features
+
+-   **Unified LLM Interface** - Consistent API across multiple providers via [@ax-llm/ax](https://axllm.dev/)
+-   **Multi-LLM Support** - Supports Gemini (2.5 Pro, Flash, 3.0 Pro) and Claude (Sonnet, Opus, Haiku) via Vertex AI
+-   **Streaming Responses** - Real-time message streaming including display of thought processes
+-   **Web Search Integration** - Enhanced responses with web search functionality
+-   **Client-Side Persistence** - Full offline support via IndexedDB (Dexie.js)
+-   **UI** - Built with shadcn/ui, Radix UI, and Tailwind CSS
+
+## Tech Stack
+
+### Frontend
+
+-   **Next.js 16** (App Router) - React framework with server/client components
+-   **React 19** - Latest React with enhanced concurrency features
+-   **TypeScript** - Type-safe development
+-   **shadcn/ui** - High-quality UI components built on Radix UI
+-   **Tailwind CSS v4** - Utility-first CSS framework
+
+### AI & Backend
+
+-   **@ax-llm/ax** - Unified LLM SDK supporting multiple providers
+-   **Google Vertex AI** - AI platform for Gemini and Claude
+-   **google-auth-library** - Vertex AI authentication
+
+### Data Persistence
+
+-   **Dexie.js** - IndexedDB ORM with TypeScript support
+
+## Getting Started
+
+### Prerequisites
+
+-   Node.js 22 or higher
+-   pnpm package manager
+-   Google Cloud project with Vertex AI enabled
+
+### Installation
 
 ```bash
 pnpm install
 ```
 
-### 2. 環境変数の設定
+### Configuration
 
-`.env.example` を `.env` にコピーして、必要な値を設定します。
+Create a `.env` file from the sample:
 
 ```bash
-cp .env.example .env
+cp example.env .env
 ```
 
-`.env` ファイルを編集:
+Edit `.env` with your Google Cloud credentials:
 
-```bash
+```env
 GOOGLE_PROJECT_ID=your-project-id
 GOOGLE_LOCATION=asia-northeast1
 ```
 
-### 3. Google Cloud 認証の設定
+### Google Cloud Authentication
 
-Google Cloud のApplication Default Credentials (ADC) を設定します。
+Set up Application Default Credentials (ADC):
 
 ```bash
-# オプション1: gcloud CLI を使用
+# Option 1: Use gcloud CLI (recommended for local development)
 gcloud auth application-default login
-
-# オプション2: サービスアカウントキーを使用する場合
-# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json を .env に追加
 ```
 
-必要な権限:
-- Vertex AI User (Gemini を使用する場合)
-- Vertex AI User (Claude を使用する場合)
+**Required IAM Permissions**:
 
-### 4. 開発サーバーの起動
+-   Vertex AI User (for both Gemini and Claude access)
+
+### Development Server
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
 
-ブラウザで [http://localhost:3000](http://localhost:3000) を開いてアプリケーションにアクセスします。
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## 技術スタック
+### Production Build
 
-- **Framework**: Next.js (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Components**: shadcn/ui
-- **State Management**: TanStack React Query
-- **AI SDK**: ax-llm (Google Gemini / Anthropic Claude)
+```bash
+pnpm build
+pnpm start
+```
 
-## プロジェクト構造
+### Linting
+
+```bash
+# Run linter
+pnpm lint
+
+# Run typecheck
+pnpm typecheck
+```
+
+## Project Structure
 
 ```
 axchat/
-├── app/
-│   ├── api/
-│   │   └── chat/
-│   │       └── route.ts          # ストリーミングAPIエンドポイント
-│   ├── page.tsx                  # メインページ
-│   └── layout.tsx
-├── features/
-│   └── chat/
-│       ├── components/
-│       │   └── Chat.tsx          # チャットUI (View)
-│       ├── hooks/
-│       │   ├── use-chat.ts       # チャットロジック (Facade Hook)
-│       │   ├── use-stream-completion.ts  # ストリーミングAPI通信
-│       │   └── use-scroll-to-bottom.ts   # スクロール制御
-│       └── types/
-│           └── index.ts          # 型定義
-├── lib/
-│   └── ai-client.ts              # AI クライアント設定
-└── components/
-    └── ui/                       # 共通UIコンポーネント
+├── app/                    # Next.js App Router
+│   ├── api/chat/          # Streaming API endpoint
+│   ├── page.tsx           # Main chat page
+│   └── providers.tsx      # React Query & Repository DI
+├── features/chat/          # Chat feature module
+│   ├── components/        # UI Layer (View)
+│   ├── hooks/             # Logic Layer
+│   │   ├── facade/        # Facade Hooks (ViewModel)
+│   │   ├── queries/       # Query Hooks (Read)
+│   │   └── commands/      # Command Hooks (Write)
+│   ├── infrastructure/    # DB Definition
+│   └── types/             # Type Definition
+├── lib/                   # Feature-independent utilities
+│   ├── ai/                # AI client configuration
+│   ├── stream/            # Streaming utilities
+│   └── session/           # Session management
+└── components/ui/          # Shared UI components
 ```
 
-## アーキテクチャ
+## License
 
-このプロジェクトは Feature-based Architecture と Separation of Concerns を採用しています。
-
-詳細は `AGENTS.md` を参照してください。
-
-## カスタマイズ
-
-デフォルトでは `gemini-flash` モデルを使用します。別のモデルを使用する場合は、`use-chat.ts` のオプションを変更してください:
-
-```typescript
-const { messages, inputValue, setInputValue, isLoading, completion, handleSend } = useChat({
-  provider: 'sonnet',  // 'gemini-pro', 'gemini-flash', 'sonnet', 'opus', 'haiku'
-  useWebSearch: true,  // Web検索を有効化
-});
-```
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
