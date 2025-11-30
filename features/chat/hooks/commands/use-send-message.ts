@@ -1,33 +1,32 @@
-import type { LLMProvider } from '@/lib/ai/providers';
-import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
-import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
-import type { ChatSessionRepository } from '../../infrastructure/chat-session-repository';
-import type { ChatSession, Message } from '../../types';
-import { generateTitle } from '../../utils/title-generator';
-import { useChatRepository } from '../use-chat-repository';
+import type { LLMProvider } from '@/features/chat/api/schemas'
+import { chatResponseDeltaSchema } from '@/features/chat/api/schemas'
+import { apiClient } from '@/lib/apiClient'
+import { useStreamFetch } from '@/lib/stream/use-stream-fetch'
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
+import type { ChatSessionRepository } from '../../infrastructure/chat-session-repository'
+import type { ChatSession, Message } from '../../types'
+import { generateTitle } from '../../utils/title-generator'
+import { useChatRepository } from '../use-chat-repository'
+
 
 type SendMessageOptions = {
-  llmProvider: LLMProvider;  // より明確な命名
-  useWebSearch: boolean;
-};
-
-type ChatRequest = {
-  prompt: string;
-  history: Array<{ role: string; content: string }>;
-  llmProvider: LLMProvider;  // より明確な命名
-  useWebSearch: boolean;
-};
+  llmProvider: LLMProvider
+  useWebSearch: boolean
+}
 
 type ChatResponse = {
-  answer: string;
-  thought?: string;
-};
+  answer: string
+  thought?: string
+}
 
 export function useSendMessage(options: SendMessageOptions) {
-  const router = useRouter();
-  const repository = useChatRepository();
-  const { fetchStream, isStreaming, abort } = useStreamFetch<ChatRequest, ChatResponse>();
+  const router = useRouter()
+  const repository = useChatRepository()
+
+  const { fetchStream, isStreaming, abort, abortSignal } = useStreamFetch<ChatResponse>(
+    chatResponseDeltaSchema
+  )
 
   const sendMessage = useCallback(
     async (
@@ -70,24 +69,26 @@ export function useSendMessage(options: SendMessageOptions) {
         createdAt: Date.now(),
       });
 
-      await fetchStream(
-        '/api/chat',
-        {
+
+      await fetchStream(apiClient.chat.$post({
+        json: {
           prompt: content,
           history: history.map((msg) => ({ role: msg.role, content: msg.content })),
           llmProvider: options.llmProvider,
           useWebSearch: options.useWebSearch,
         },
-        {
-          onStream: async (_, accumulated) => {
-            // 各チャンク受信時にDB更新
-            await repository.updateMessage(streamingMessageId, {
-              content: accumulated.answer || '',
-              thinking: accumulated.thought,
-            });
-          },
+      }, {
+        init: {
+          signal: abortSignal,
         }
-      );
+      }), {
+        onStream: async (_, accumulated) => {
+          await repository.updateMessage(streamingMessageId, {
+            content: accumulated.answer || '',
+            thinking: accumulated.thought,
+          })
+        },
+      })
 
       // 4. セッションの updatedAt を更新
       await repository.save({
