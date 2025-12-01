@@ -1,16 +1,16 @@
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from "react"
 
 export function useScrollToBottom(dependencies: React.DependencyList) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies);
+  }, dependencies)
 
-  return messagesEndRef;
+  return messagesEndRef
 }

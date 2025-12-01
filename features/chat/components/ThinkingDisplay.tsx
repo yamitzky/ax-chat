@@ -1,21 +1,24 @@
-'use client'
+"use client"
 
-import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronRight, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 
 interface ThinkingDisplayProps {
   thinking: string
   isStreaming?: boolean
 }
 
-export function ThinkingDisplay({ thinking, isStreaming }: ThinkingDisplayProps) {
+export function ThinkingDisplay({
+  thinking,
+  isStreaming,
+}: ThinkingDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   if (!thinking && !isStreaming) return null
 
   // 最後の行を取得（プレビュー用）
-  const lines = thinking.split('\n').filter(line => line.trim())
+  const lines = thinking.split("\n").filter((line) => line.trim())
   const lastLine = lines[lines.length - 1] || thinking
 
   return (
@@ -32,7 +35,13 @@ export function ThinkingDisplay({ thinking, isStreaming }: ThinkingDisplayProps)
           <ChevronRight className="w-3 h-3 mr-1" />
         )}
         <Sparkles className="w-3 h-3 mr-1" />
-        {isExpanded ? 'Thinking' : <span className="truncate max-w-[300px] inline-block text-left">{lastLine}</span>}
+        {isExpanded ? (
+          "Thinking"
+        ) : (
+          <span className="truncate max-w-[300px] inline-block text-left">
+            {lastLine}
+          </span>
+        )}
       </Button>
 
       {isExpanded && (
@@ -46,4 +55,3 @@ export function ThinkingDisplay({ thinking, isStreaming }: ThinkingDisplayProps)
     </div>
   )
 }
-

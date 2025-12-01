@@ -5,19 +5,19 @@ export function createSSEParser<T>() {
   return new TransformStream<string, T>({
     transform(rawEvent: string, controller) {
       const lines = rawEvent
-        .split('\n')
+        .split("\n")
         .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith(':')) // コメント無視
+        .filter((l) => l && !l.startsWith(":")) // コメント無視
 
       const dataLines = lines
-        .filter((l) => l.startsWith('data:'))
-        .map((l) => l.slice('data:'.length).trim())
+        .filter((l) => l.startsWith("data:"))
+        .map((l) => l.slice("data:".length).trim())
 
       if (dataLines.length === 0) return
 
-      const data = dataLines.join('\n')
+      const data = dataLines.join("\n")
 
-      if (data === '[DONE]') {
+      if (data === "[DONE]") {
         controller.terminate()
         return
       }
@@ -35,11 +35,11 @@ export function createSSEParser<T>() {
  * SSEイベント境界で分割するTransformStream
  */
 export function createEventSplitter() {
-  let buffer = ''
+  let buffer = ""
   return new TransformStream<string, string>({
     transform(chunk: string, controller) {
       buffer += chunk
-      const events = buffer.split('\n\n')
+      const events = buffer.split("\n\n")
       buffer = events.pop()! // 最後の不完全イベントは残す
       for (const e of events) controller.enqueue(e)
     },

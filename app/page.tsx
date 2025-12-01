@@ -1,4 +1,4 @@
-import Chat from "@/features/chat/components/Chat";
+import Chat from "@/features/chat/components/Chat"
 
 export default function Home() {
   return (
@@ -6,5 +6,5 @@ export default function Home() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] -z-10" />
       <Chat />
     </div>
-  );
+  )
 }

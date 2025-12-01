@@ -1,12 +1,12 @@
-import { useCallback, useState } from 'react'
-import type { z } from 'zod'
-import { createEventSplitter, createSSEParser } from './sse-parser'
+import { useCallback, useState } from "react"
+import type { z } from "zod"
+import { createEventSplitter, createSSEParser } from "./sse-parser"
 
 /**
  * SSEストリーミングHTTPリクエストを扱う汎用hook
  */
 export function useStreamFetch<TResponse>(
-  responseSchema: z.ZodType<Partial<TResponse>>
+  responseSchema: z.ZodType<Partial<TResponse>>,
 ) {
   const [controller, setController] = useState<AbortController | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
@@ -17,9 +17,9 @@ export function useStreamFetch<TResponse>(
       options?: {
         onStream?: (
           delta: Partial<TResponse>,
-          accumulated: TResponse
+          accumulated: TResponse,
         ) => void | Promise<void>
-      }
+      },
     ) => {
       if (controller) controller.abort()
       const newController = new AbortController()
@@ -30,7 +30,7 @@ export function useStreamFetch<TResponse>(
         const response = await responsePromise
 
         if (!response.body) {
-          throw new Error('No response body')
+          throw new Error("No response body")
         }
 
         // SSEパーサーのパイプライン
@@ -54,7 +54,7 @@ export function useStreamFetch<TResponse>(
         setIsStreaming(false)
       }
     },
-    [controller, responseSchema]
+    [controller, responseSchema],
   )
 
   const abort = useCallback(() => {
@@ -71,25 +71,36 @@ export function useStreamFetch<TResponse>(
   }
 }
 
-function mergeDeep<T>(target: Record<string, unknown>, source: Record<string, unknown>): T {
-  if (typeof target !== 'object' || target === null) {
-    return source as T;
+function mergeDeep<T>(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): T {
+  if (typeof target !== "object" || target === null) {
+    return source as T
   }
 
-  const result = { ...target };
+  const result = { ...target }
 
   for (const key in source) {
-    const targetValue = result[key];
-    const sourceValue = source[key];
-    
-    if (typeof targetValue === 'string' && typeof sourceValue === 'string') {
-      result[key] = targetValue + sourceValue;
-    } else if (typeof targetValue === 'object' && targetValue !== null && typeof sourceValue === 'object' && sourceValue !== null) {
-      result[key] = mergeDeep(targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>);
+    const targetValue = result[key]
+    const sourceValue = source[key]
+
+    if (typeof targetValue === "string" && typeof sourceValue === "string") {
+      result[key] = targetValue + sourceValue
+    } else if (
+      typeof targetValue === "object" &&
+      targetValue !== null &&
+      typeof sourceValue === "object" &&
+      sourceValue !== null
+    ) {
+      result[key] = mergeDeep(
+        targetValue as Record<string, unknown>,
+        sourceValue as Record<string, unknown>,
+      )
     } else {
-      result[key] = sourceValue;
+      result[key] = sourceValue
     }
   }
-  
-  return result as T;
+
+  return result as T
 }
