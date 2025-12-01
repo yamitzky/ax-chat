@@ -1,8 +1,4 @@
 import type { LLMProvider } from '@/lib/ai/providers';
-import type { Session } from '@/lib/session/types';
-
-// 再エクスポート
-export type { Session };
 
 export type Message = {
   id: string;  // メッセージID
@@ -21,10 +17,29 @@ export interface ChatSessionData {
   useWebSearch: boolean;
 }
 
+export interface Session<TData> {
+  id: string;
+  title: string;
+  data: TData;
+  metadata: {
+    createdAt: number;
+    updatedAt: number;
+  };
+}
+
 /**
- * チャットセッション型（汎用Session型を使用）
+ * チャットセッション型
  */
 export type ChatSession = Session<ChatSessionData>;
+
+/**
+ * 仮セッション（メモリ内のみ存在、DB未保存）
+ */
+export interface DraftChatSession {
+  title: string;
+  data: ChatSessionData;
+  // idは持たない（コミット時に生成）
+}
 
 /**
  * セッション一覧アイテム型（後方互換性のため保持）

@@ -1,18 +1,18 @@
 'use client'
 
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useChatSessionOperations } from '../operations/use-chat-session-operations';
 
 type Props = {
   onNewSession?: () => void;
 };
 
 export function NewSessionButton({ onNewSession }: Props) {
-  const router = useRouter();
+  const { switchSession } = useChatSessionOperations();
 
   const handleClick = () => {
-    router.push('/');
+    switchSession(null);
     onNewSession?.();
   };
 

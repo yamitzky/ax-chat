@@ -60,7 +60,6 @@ export function ChatInput({ inputValue, setInputValue, isLoading, onSubmit, onAb
             type="button"
             onClick={onAbort}
             size="icon"
-            variant="destructive"
             className="shrink-0"
           >
             <Square className="w-4 h-4" />

@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react';
-import { Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SessionListItem as SessionListItemType } from '../types';
+import { Edit2 } from 'lucide-react';
+import { useState } from 'react';
+import { useChatSessionOperations } from '../operations/use-chat-session-operations';
+import type { ChatSession } from '../types';
 import { SessionTitleEditor } from './SessionTitleEditor';
-import { useSessions } from '../hooks/facade/use-sessions';
 
 type Props = {
-  session: SessionListItemType;
+  session: ChatSession;
   isActive: boolean;
   onClick: () => void;
 };
@@ -31,7 +31,7 @@ function formatRelativeTime(timestamp: number): string {
 
 export function SessionListItem({ session, isActive, onClick }: Props) {
   const [isEditing, setIsEditing] = useState(false);
-  const { updateTitle } = useSessions();
+  const { updateTitle } = useChatSessionOperations();
 
   const handleSave = async (newTitle: string) => {
     if (newTitle.trim() && newTitle !== session.title) {
@@ -78,7 +78,7 @@ export function SessionListItem({ session, isActive, onClick }: Props) {
         </div>
       )}
       <div className="text-xs text-muted-foreground mt-1">
-        {formatRelativeTime(session.updatedAt)}
+        {formatRelativeTime(session.metadata.updatedAt)}
       </div>
     </button>
   );

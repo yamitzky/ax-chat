@@ -1,11 +1,12 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useChatSessionOperations } from '@/features/chat/operations/use-chat-session-operations';
 import { cn } from '@/lib/utils';
-import { useSessions } from '../hooks/facade/use-sessions';
-import { SessionListItem } from './SessionListItem';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useChatSessionStore } from '../store/use-chat-session-store';
 import { NewSessionButton } from './NewSessionButton';
+import { SessionListItem } from './SessionListItem';
 
 type Props = {
   isOpen: boolean;
@@ -13,9 +14,12 @@ type Props = {
 };
 
 export function SessionSidebar({ isOpen, onClose }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const { sessions, switchSession } = useSessions();
 
+  // Query: 状態の読み取り
+  const sessions = useChatSessionStore((state) => state.sessions);
+  const { switchSession } = useChatSessionOperations();
   // 現在のセッションIDをURLパラメータから取得
   const currentSessionId = searchParams.get('sessionId');
 
