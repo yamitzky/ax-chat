@@ -1,6 +1,6 @@
-import type { LLMProvider } from "@/lib/ai/providers"
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
+import type { LLMProvider } from "@/lib/ai/providers"
 import type { ChatSession, DraftChatSession, Message } from "../types"
 
 interface ChatSessionStore {

@@ -9,7 +9,7 @@ export function useScrollToBottom(dependencies: React.DependencyList) {
 
   useEffect(() => {
     scrollToBottom()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: dependencies is explicitly passed as an array
   }, dependencies)
 
   return messagesEndRef

@@ -35,7 +35,7 @@ export function useChatSessionOperations() {
         router.replace("/")
       }
     },
-    [chatRepository],
+    [router],
   )
 
   // セッション切替時の初期化

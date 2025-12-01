@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useChatSessionOperations } from "@/features/chat/operations/use-chat-session-operations"
 import { cn } from "@/lib/utils"
@@ -14,7 +14,6 @@ type Props = {
 }
 
 export function SessionSidebar({ isOpen, onClose }: Props) {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   // Query: 状態の読み取り
