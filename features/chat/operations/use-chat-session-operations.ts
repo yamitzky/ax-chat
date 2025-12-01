@@ -1,7 +1,9 @@
+import { apiClient } from '@/lib/apiClient';
 import type { LLMProvider } from '@/lib/ai/providers';
 import { useStreamFetch } from '@/lib/stream/use-stream-fetch';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
+import { chatResponseDeltaSchema } from '../api/schemas';
 import { useChatRepository } from '../repositories/chat-repository';
 import { useChatSessionStore } from '../store/use-chat-session-store';
 import type { ChatSession, Message } from '../types';
@@ -11,7 +13,7 @@ type AccumulatedMessage = { answer?: string; thought?: string };
 
 export function useChatSessionOperations() {
   const router = useRouter();
-  const { fetchStream, abort } = useStreamFetch();
+  const { fetchStream, abort, abortSignal } = useStreamFetch(chatResponseDeltaSchema);
   const chatRepository = useChatRepository();
 
   // 初期化(ページロード時の最初の１回のみ)
@@ -113,13 +115,18 @@ export function useChatSessionOperations() {
       try {
         state.startStreaming();
         const result = await fetchStream(
-          '/api/chat',
-          {
-            prompt: content,
-            history: state.activeMessages.map((m) => ({ role: m.role, content: m.content })),
-            llmProvider: currentSession.data.llmProvider,
-            useWebSearch: currentSession.data.useWebSearch,
-          },
+          apiClient.chat.$post({
+            json: {
+              prompt: content,
+              history: state.activeMessages.map((m) => ({ role: m.role, content: m.content })),
+              llmProvider: currentSession.data.llmProvider,
+              useWebSearch: currentSession.data.useWebSearch,
+            },
+          }, {
+            init: {
+              signal: abortSignal,
+            }
+          }),
           {
             onStream: async (_, accumulated) => {
               const acc = accumulated as AccumulatedMessage;
@@ -152,7 +159,7 @@ export function useChatSessionOperations() {
         await chatRepository.updateSessionTimestamp(sessionId);
       }
     },
-    [fetchStream, router, chatRepository]
+    [fetchStream, router, chatRepository, abortSignal]
   );
 
   return {

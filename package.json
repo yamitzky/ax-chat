@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ax-llm/ax": "file:/Users/xd/sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz",
+    "@hono/zod-validator": "^0.4.1",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-select": "^2.2.6",
@@ -20,8 +21,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.2.1",
+    "dexie-react-hooks": "^1.1.7",
     "dotenv": "^17.2.3",
     "google-auth-library": "^10.5.0",
+    "hono": "^4.10.7",
     "immer": "^11.0.1",
     "lucide-react": "^0.555.0",
     "next": "16.0.5",
@@ -30,6 +33,7 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
+    "zod": "^3.23.8",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
