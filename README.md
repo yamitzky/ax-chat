@@ -1,5 +1,7 @@
 # axchat
 
+[English](./README.md) | [日本語](./README.ja.md)
+
 > Demo of an AI chat application leveraging @ax-llm/ax
 
 This is an AI chat application using [@ax-llm/ax](https://axllm.dev/). It supports multiple LLM providers (Gemini, Claude) via Google Vertex AI and features streaming responses and client-side persistence using IndexedDB (via Dexie.js).
@@ -10,8 +12,10 @@ This is an AI chat application using [@ax-llm/ax](https://axllm.dev/). It suppor
 -   **Multi-LLM Support** - Supports Gemini (2.5 Pro, Flash, 3.0 Pro) and Claude (Sonnet, Opus, Haiku) via Vertex AI
 -   **Streaming Responses** - Real-time message streaming including display of thought processes
 -   **Web Search Integration** - Enhanced responses with web search functionality
+-   **Type-safe API Communication** - Type-safe, schema-first API design via Hono RPC
+-   **Fast State Management** - Optimized global state management with Zustand + Immer
 -   **Client-Side Persistence** - Full offline support via IndexedDB (Dexie.js)
--   **UI** - Built with shadcn/ui, Radix UI, and Tailwind CSS
+-   **Modern UI** - Built with shadcn/ui, Radix UI, and Tailwind CSS v4
 
 ## Tech Stack
 
@@ -22,6 +26,12 @@ This is an AI chat application using [@ax-llm/ax](https://axllm.dev/). It suppor
 -   **TypeScript** - Type-safe development
 -   **shadcn/ui** - High-quality UI components built on Radix UI
 -   **Tailwind CSS v4** - Utility-first CSS framework
+
+### State Management & API
+
+-   **Zustand** - Lightweight global state management combined with Immer
+-   **Hono** - Type-safe RPC style API framework
+-   **Zod** - TypeScript-first schema validation
 
 ### AI & Backend
 
@@ -96,6 +106,9 @@ pnpm start
 # Run linter
 pnpm lint
 
+# Automatic fix
+pnpm lint:fix
+
 # Run typecheck
 pnpm typecheck
 ```
@@ -104,23 +117,26 @@ pnpm typecheck
 
 ```
 axchat/
-├── app/                    # Next.js App Router
-│   ├── api/chat/          # Streaming API endpoint
-│   ├── page.tsx           # Main chat page
-│   └── providers.tsx      # React Query & Repository DI
-├── features/chat/          # Chat feature module
-│   ├── components/        # UI Layer (View)
-│   ├── hooks/             # Logic Layer
-│   │   ├── facade/        # Facade Hooks (ViewModel)
-│   │   ├── queries/       # Query Hooks (Read)
-│   │   └── commands/      # Command Hooks (Write)
-│   ├── infrastructure/    # DB Definition
-│   └── types/             # Type Definition
-├── lib/                   # Feature-independent utilities
-│   ├── ai/                # AI client configuration
-│   ├── stream/            # Streaming utilities
-│   └── session/           # Session management
-└── components/ui/          # Shared UI components
+├── app/                       # Next.js App Router
+│   ├── api/[...route]/       # Hono API integration endpoint
+│   ├── page.tsx              # Main chat page
+│   ├── init.tsx              # Zustand initialization
+│   └── providers.tsx         # Repository DI
+├── features/chat/             # Chat feature module
+│   ├── api/                  # Hono route definitions, Zod schemas
+│   ├── components/           # UI Layer
+│   ├── operations/           # Integrated Hooks (ViewModel)
+│   ├── store/                # Zustand Store (Global State)
+│   ├── repositories/         # Repository (Data Access Layer)
+│   ├── infrastructure/       # DB Definition (Dexie)
+│   ├── types/                # Type Definition
+│   └── utils/                # Utilities
+├── lib/                      # Feature-independent utilities
+│   ├── ai/                   # AI configuration
+│   ├── apiClient/            # Hono RPC client
+│   ├── stream/               # SSE streaming
+│   └── hooks/                # General purpose hooks
+└── components/ui/             # shadcn/ui
 ```
 
 ## License

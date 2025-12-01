@@ -12,8 +12,10 @@
 - **複数 LLM 対応** - Vertex AI 経由で Gemini (2.5 Pro、Flash、3.0 Pro) と Claude (Sonnet、Opus、Haiku) をサポート
 - **ストリーミングレスポンス** - 思考プロセスの表示を含むリアルタイムメッセージストリーミング
 - **Web 検索統合** - Web 検索機能による回答の強化
-- **クライアントサイド永続化** - IndexedDB (Dexie.js) による完全なオフラインサポート
-- **UI** - shadcn/ui、Radix UI、Tailwind CSS で構築
+- **型安全なAPI通信** - Hono RPC による型安全でスキーマファーストなAPI設計
+- **高速な状態管理** - Zustand + Immerによる最適化されたグローバル状態管理
+- **クライアントサイド永続化** - IndexedDB (Dexie.js) によるオフライン対応
+- **モダンなUI** - shadcn/ui、Radix UI、Tailwind CSS v4
 
 ## 技術スタック
 
@@ -24,6 +26,12 @@
 - **TypeScript** - 型安全な開発
 - **shadcn/ui** - Radix UI 上に構築された高品質 UI コンポーネント
 - **Tailwind CSS v4** - ユーティリティファースト CSS フレームワーク
+
+### 状態管理 & API
+
+- **Zustand** - Immerと組み合わせた軽量なグローバル状態管理
+- **Hono** - 型安全なRPCスタイルAPIフレームワーク
+- **Zod** - TypeScript優先のスキーマバリデーション
 
 ### AI & バックエンド
 
@@ -97,6 +105,9 @@ pnpm start
 # リンター実行
 pnpm lint
 
+# 自動修正
+pnpm lint:fix
+
 # 型チェック
 pnpm typecheck
 ```
@@ -106,23 +117,26 @@ pnpm typecheck
 
 ```
 axchat/
-├── app/                    # Next.js App Router
-│   ├── api/chat/          # ストリーミング API エンドポイント
-│   ├── page.tsx           # メインチャットページ
-│   └── providers.tsx      # React Query & Repository DI
-├── features/chat/          # チャット機能モジュール
-│   ├── components/        # UI 層 (View)
-│   ├── hooks/             # ロジック層
-│   │   ├── facade/        # Facade Hooks (ViewModel)
-│   │   ├── queries/       # Query Hooks (Read)
-│   │   └── commands/      # Command Hooks (Write)
-│   ├── infrastructure/    # DB 定義
-│   └── types/             # 型定義
-├── lib/                   # 機能非依存のユーティリティ
-│   ├── ai/                # AI クライアント設定
-│   ├── stream/            # ストリーミングユーティリティ
-│   └── session/           # セッション管理
-└── components/ui/          # 共有 UI コンポーネント
+├── app/                       # Next.js App Router
+│   ├── api/[...route]/       # Hono API統合エンドポイント
+│   ├── page.tsx              # メインチャットページ
+│   ├── init.tsx              # Zustand初期化
+│   └── providers.tsx         # Repository DI
+├── features/chat/             # チャット機能モジュール
+│   ├── api/                  # Honoルート定義、Zodスキーマ
+│   ├── components/           # UI層
+│   ├── operations/           # 統合Hook (ViewModel)
+│   ├── store/                # Zustand Store (グローバル状態)
+│   ├── repositories/         # Repository (データアクセス層)
+│   ├── infrastructure/       # DB定義 (Dexie)
+│   ├── types/                # 型定義
+│   └── utils/                # ユーティリティ
+├── lib/                      # 機能非依存
+│   ├── ai/                   # AI設定
+│   ├── apiClient/            # Hono RPCクライアント
+│   ├── stream/               # SSEストリーミング
+│   └── hooks/                # 汎用Hook
+└── components/ui/             # shadcn/ui
 ```
 
 ## ライセンス
