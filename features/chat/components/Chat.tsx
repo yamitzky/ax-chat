@@ -1,10 +1,12 @@
 'use client'
 
 import { Card } from "@/components/ui/card"
+import type { LLMProvider } from '@/lib/ai/providers'
 import { cn } from "@/lib/utils"
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
-import { useChat } from "../hooks/facade/use-chat"
+import { useEffect, useState } from "react"
+import { useChatSessionOperations } from "../operations/use-chat-session-operations"
+import { useChatSessionStore } from "../store/use-chat-session-store"
 import { ChatHeader } from "./ChatHeader"
 import { ChatInput } from "./ChatInput"
 import { ChatMessages } from "./ChatMessages"
@@ -12,13 +14,40 @@ import { SessionSidebar } from "./SessionSidebar"
 
 export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId');
 
-  const { messages, inputValue, setInputValue, isLoading, handleSend, handleAbort, llmProvider, handleProviderChange } = useChat({
-    sessionId,
-    useWebSearch: true,
-  });
+  // Query: 状態の読み取り
+  const activeMessages = useChatSessionStore((state) => state.activeMessages);
+  const isStreaming = useChatSessionStore((state) => state.isStreaming);
+  const draftSession = useChatSessionStore((state) => state.draftSession);
+  const activeSession = useChatSessionStore((state) => state.activeSessionId ? state.sessions.find(s => s.id === state.activeSessionId) : draftSession);
+
+  // Command: 操作
+  const { sendMessage, updateLLMProvider, abortStream, initializeSession } = useChatSessionOperations();
+
+  useEffect(() => {
+    initializeSession(sessionId);
+  }, [initializeSession, sessionId]);
+
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!inputValue.trim() || isStreaming) return;
+
+    const content = inputValue;
+    setInputValue('');
+
+    try {
+      await sendMessage(sessionId, content);
+    } catch (err) {
+      console.error('Send error:', err);
+    }
+  };
+
+  const handleProviderChange = async (newProvider: LLMProvider) => {
+    await updateLLMProvider(sessionId, newProvider);
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -35,21 +64,21 @@ export default function Chat() {
           <ChatHeader
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-            provider={llmProvider}
+            provider={activeSession?.data.llmProvider ?? 'gemini-flash'}
             onProviderChange={handleProviderChange}
           />
 
           <ChatMessages
-            messages={messages}
-            isLoading={isLoading}
+            messages={activeMessages}
+            isLoading={isStreaming}
           />
 
           <ChatInput
             inputValue={inputValue}
             setInputValue={setInputValue}
-            isLoading={isLoading}
+            isLoading={isStreaming}
             onSubmit={handleSend}
-            onAbort={handleAbort}
+            onAbort={abortStream}
           />
         </Card>
       </div>
