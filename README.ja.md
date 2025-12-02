@@ -6,6 +6,9 @@
 
 [@ax-llm/ax](https://axllm.dev/) を使った AI チャットアプリケーションです。Google Vertex AI 経由で複数の LLM プロバイダー (Gemini、Claude) をサポートし、ストリーミングレスポンスと IndexedDB (Dexie.js経由) によるクライアントサイド永続化を実現しています。
 
+![Dec-02-2025 10-48-16](https://github.com/user-attachments/assets/ae0de368-61f1-4f2e-b37b-90307da84c98)
+
+
 ## 特徴
 
 - **統一された LLM インターフェース** - [@ax-llm/ax](https://axllm.dev/) による複数プロバイダーの一貫した API
