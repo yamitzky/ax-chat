@@ -6,7 +6,8 @@
 
 This is an AI chat application using [@ax-llm/ax](https://axllm.dev/). It supports multiple LLM providers (Gemini, Claude) via Google Vertex AI and features streaming responses and client-side persistence using IndexedDB (via Dexie.js).
 
-![Dec-02-2025 10-25-00](https://github.com/user-attachments/assets/f42fb830-e490-4d5f-bbdb-9462d9f37fd9)
+![Dec-02-2025 10-26-19](https://github.com/user-attachments/assets/33eaf3c0-5d08-4da7-b817-52e3c1e25977)
+
 
 ## Features
 
