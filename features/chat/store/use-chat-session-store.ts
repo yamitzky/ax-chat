@@ -18,6 +18,8 @@ interface ChatSessionStore {
   setActiveSession: (sessionId: string | null, messages: Message[]) => void
   addMessage: (message: Message) => void
   updateMessage: (messageId: string, updates: Partial<Message>) => void
+  deleteMessage: (messageId: string) => void
+  deleteMessagesAfter: (messageId: string) => void
   startStreaming: () => void
   finishStreaming: () => void
 
@@ -63,6 +65,26 @@ export const useChatSessionStore = create<ChatSessionStore>()(
           )
           if (msg) {
             Object.assign(msg, updates)
+          }
+        }),
+
+      deleteMessage: (messageId) =>
+        set((state) => {
+          const index = state.activeMessages.findIndex(
+            (m: Message) => m.id === messageId,
+          )
+          if (index !== -1) {
+            state.activeMessages.splice(index, 1)
+          }
+        }),
+
+      deleteMessagesAfter: (messageId) =>
+        set((state) => {
+          const index = state.activeMessages.findIndex(
+            (m: Message) => m.id === messageId,
+          )
+          if (index !== -1) {
+            state.activeMessages.splice(index + 1)
           }
         }),
 

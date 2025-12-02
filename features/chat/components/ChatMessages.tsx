@@ -1,40 +1,13 @@
 "use client"
 
-import { Bot, Check, Copy, User } from "lucide-react"
-import { useCallback, useState } from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import { CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useScrollToBottom } from "@/lib/hooks/use-scroll-to-bottom"
+import { useChatSessionOperations } from "../operations/use-chat-session-operations"
 import type { Message } from "../types"
-import { MarkdownMessage } from "./MarkdownMessage"
-import { ThinkingDisplay } from "./ThinkingDisplay"
-
-function CopyButton({ content }: { content: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(content)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [content])
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-      onClick={handleCopy}
-    >
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3 text-muted-foreground" />
-      )}
-    </Button>
-  )
-}
+import { MessageItem } from "./MessageItem"
+import { WelcomeMessage } from "./WelcomeMessage"
 
 type Props = {
   messages: Message[]
@@ -43,84 +16,71 @@ type Props = {
 
 export function ChatMessages({ messages, isLoading }: Props) {
   const scrollRef = useScrollToBottom([messages, isLoading])
+  const { editMessage } = useChatSessionOperations()
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
+
+  const handleEditStart = (messageId: string, content: string) => {
+    setEditingMessageId(messageId)
+    setEditContent(content)
+  }
+
+  const handleEditCancel = () => {
+    setEditingMessageId(null)
+    setEditContent("")
+  }
+
+  const handleEditSave = async (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId)
+    if (!message) {
+      return
+    }
+
+    if (editContent.trim() === message.content.trim()) {
+      handleEditCancel()
+      return
+    }
+
+    const contentToSave = editContent.trim()
+    // 先に編集モードを解除
+    setEditingMessageId(null)
+    setEditContent("")
+    try {
+      await editMessage(messageId, contentToSave)
+    } catch (error) {
+      console.error("Failed to save edit:", error)
+      // エラーが発生した場合は編集モードに戻す
+      setEditingMessageId(messageId)
+      setEditContent(contentToSave)
+    }
+  }
 
   return (
     <CardContent className="flex-1 p-0 overflow-hidden relative">
       <ScrollArea className="h-full p-4">
         <div className="flex flex-col gap-4 pb-4">
           {/* Welcome Message */}
-          {messages.length === 0 && !isLoading && (
-            <div className="text-center text-muted-foreground py-10 text-sm">
-              <Bot className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>Hello! I am your AI assistant.</p>
-              <p>Ask me anything to get started.</p>
-            </div>
-          )}
+          {messages.length === 0 && !isLoading && <WelcomeMessage />}
 
           {messages.map((msg, index) => {
             const isStreaming =
               isLoading &&
               index === messages.length - 1 &&
               msg.role === "assistant"
+            const isEditing = editingMessageId === msg.id
 
             return (
-              <div
-                key={index}
-                className={`group flex gap-3 ${
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}
-              >
-                <Avatar className="w-8 h-8 border shadow-sm">
-                  <AvatarFallback
-                    className={
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }
-                  >
-                    {msg.role === "user" ? (
-                      <User className="w-4 h-4" />
-                    ) : (
-                      <Bot className="w-4 h-4" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col max-w-[85%]">
-                  <div className="flex items-start gap-1">
-                    {msg.role === "user" && (
-                      <CopyButton content={msg.content} />
-                    )}
-                    <div
-                      className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm wrap-break-word ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-none whitespace-pre-wrap"
-                          : "bg-muted/80 text-foreground rounded-bl-none border"
-                      }`}
-                    >
-                      {msg.role === "assistant" ? (
-                        <>
-                          <MarkdownMessage content={msg.content} />
-                          {isStreaming && (
-                            <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-primary/50 animate-pulse" />
-                          )}
-                        </>
-                      ) : (
-                        msg.content
-                      )}
-                    </div>
-                    {msg.role === "assistant" && (
-                      <CopyButton content={msg.content} />
-                    )}
-                  </div>
-                  {/* アシスタントメッセージのthinking表示 */}
-                  {msg.role === "assistant" && msg.thinking && (
-                    <ThinkingDisplay
-                      thinking={msg.thinking}
-                      isStreaming={isStreaming}
-                    />
-                  )}
-                </div>
-              </div>
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isStreaming={isStreaming}
+                isEditing={isEditing}
+                editContent={editContent}
+                onEditStart={() => handleEditStart(msg.id, msg.content)}
+                onEditChange={setEditContent}
+                onEditSave={() => handleEditSave(msg.id)}
+                onEditCancel={handleEditCancel}
+              />
             )
           })}
           <div ref={scrollRef} />

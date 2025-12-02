@@ -21,6 +21,8 @@ export interface ChatRepository {
   findMessagesBySessionId(sessionId: string): Promise<Message[]>
   createMessage(message: Message): Promise<void>
   updateMessage(messageId: string, updates: Partial<Message>): Promise<void>
+  deleteMessage(messageId: string): Promise<void>
+  deleteMessagesAfter(messageId: string, sessionId: string): Promise<void>
 }
 
 export class DexieChatRepository implements ChatRepository {
@@ -55,6 +57,27 @@ export class DexieChatRepository implements ChatRepository {
     updates: Partial<Message>,
   ): Promise<void> {
     await db.messages.update(messageId, updates)
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    await db.messages.delete(messageId)
+  }
+
+  async deleteMessagesAfter(
+    messageId: string,
+    sessionId: string,
+  ): Promise<void> {
+    const targetMessage = await db.messages.get(messageId)
+    if (!targetMessage) {
+      return
+    }
+
+    // 指定メッセージより後のメッセージを削除
+    await db.messages
+      .where("sessionId")
+      .equals(sessionId)
+      .filter((msg) => msg.createdAt > targetMessage.createdAt)
+      .delete()
   }
 
   async updateSessionTitle(sessionId: string, title: string): Promise<void> {
