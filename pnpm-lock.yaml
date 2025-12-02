@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ax-llm/ax':
-        specifier: file:/Users/xd/sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz
-        version: file:../../sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz
+        specifier: ^15.0.8
+        version: 15.0.8
       '@hono/zod-validator':
         specifier: ^0.4.1
         version: 0.4.3(hono@4.10.7)(zod@3.25.76)
@@ -112,9 +112,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@ax-llm/ax@file:../../sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz':
-    resolution: {integrity: sha512-NUcdov/c86CZ1BmIKNqBUXM/xJzPZHlHqmzswhuJkPNtaXAkq74OxH2N+VB4XuRN9R4dCpeQ50MOrSq1bV6VCw==, tarball: file:../../sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz}
-    version: 15.0.3
+  '@ax-llm/ax@15.0.8':
+    resolution: {integrity: sha512-jQnosobeW/Zrn5fxAlMKgd+hH1i81cGMMOLXx0ZE2C69+jf9+9gACIntIz+lCtgMbTAAySiV7SGNFPdew9BEcg==}
 
   '@biomejs/biome@2.3.8':
     resolution: {integrity: sha512-Qjsgoe6FEBxWAUzwFGFrB+1+M8y/y5kwmg5CHac+GSVOdmOIqsAiXM5QMVGZJ1eCUCLlPZtq4aFAQ0eawEUuUA==}
@@ -1694,7 +1693,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@ax-llm/ax@file:../../sources/ax/src/ax/dist/ax-llm-ax-15.0.3.tgz':
+  '@ax-llm/ax@15.0.8':
     dependencies:
       '@opentelemetry/api': 1.9.0
       dayjs: 1.11.19
