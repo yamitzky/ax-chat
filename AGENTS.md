@@ -1,11 +1,47 @@
 # AGENTS.md
 
-## 全体的な依頼事項
+## 全体的なルール
 
 - パッケージ管理には pnpm を使用してください
 - 作業完了後、`pnpm lint:fix` と `pnpm typecheck` を実行してください
   - lintの修正は、ignoreや`as any`で回避せず、正しく修正してください
   - 場当たり的な修正が必要な場合は、ユーザーに確認してください
+
+## UX原則
+
+- ローディング表示
+- AIの思考(thoughtフィールド)や、生成途中のものを逐次表示する
+- AbortController: ストリーミング/長時間リクエストには`AbortSignal`を実装し、途中で処理を中断できるようにする
+- Dexieを使い、過去のメッセージ履歴をIndexedDBに保存する
+
+## 開発原則
+
+1. コンポーネントにロジックを書かない
+   - すべてOperations HookとZustand Storeに委譲
+   - Component内の`useState`は最小限（入力フィールドなど）
+
+2. 状態はZustandで管理
+   - グローバル状態はZustand Store
+   - Immer middlewareで不変更新を簡潔に
+   - 永続化が必要な状態のみDBにも保存
+
+3. Operations Hookで統合
+   - 複数のRepository操作、Zustand更新、API呼び出しを1つのHookにまとめる
+   - Componentは1つのOperations Hookのみ呼び出す
+
+4. ZustandとDBを同期
+   - Operations内でメモリ更新（Zustand）→ DB永続化の順序保証
+   - ストリーミング中は細かくZustand更新、完了後にDB永続化
+
+5. 型安全性を最優先
+   - Hono RPC で型を自動共有
+   - Zod でスキーマを定義
+   - TypeScriptの型チェックを最大限活用
+
+6. 汎用化は後回し（YAGNI原則）
+   - まず機能固有で実装
+   - 必要になってから汎用化を検討
+   - lib/への移動は慎重に判断
 
 ## 技術スタック
 
@@ -19,6 +55,11 @@
 - Validation: Zod
 - Linter/Formatter: Biome
 - AI SDK: @ax-llm/ax
+
+## 外部リソース
+
+- [Hono RPC](https://hono.dev/llms.txt)
+- [ax-llm/ax](https://axllm.dev/llm.txt)
 
 ## アーキテクチャ原則
 
@@ -112,6 +153,7 @@ export function useChatSessionOperations() {
   const repository = useChatRepository();
   const { fetchStream } = useStreamFetch();
 
+  // operation は useCallback で実装
   const sendMessage = useCallback(async (sessionId, content) => {
     const state = useChatSessionStore.getState();
 
@@ -144,17 +186,10 @@ export function useChatSessionOperations() {
 // features/chat/store/use-chat-session-store.ts
 export const useChatSessionStore = create<ChatSessionStore>()(
   immer((set) => ({
-    sessions: [],
     activeMessages: [],
-    isStreaming: false,
 
     addMessage: (message) => set((state) => {
       state.activeMessages.push(message); // Immerで簡潔に記述
-    }),
-
-    updateMessage: (messageId, updates) => set((state) => {
-      const msg = state.activeMessages.find(m => m.id === messageId);
-      if (msg) Object.assign(msg, updates);
     }),
   }))
 );
@@ -162,13 +197,7 @@ export const useChatSessionStore = create<ChatSessionStore>()(
 
 #### いつOperations層を導入するか
 
-- **単純な機能**: 直接Repository Hookを呼び出す
-  - 単純な機能でもOperation Hookを使用しても良い
-- **複雑な機能**: Operations Hookで統合
-  - 複数のRepository操作が必要
-  - Zustand更新とDB更新を同期
-  - 外部API呼び出しを含む
-  - ストリーミング処理を含む
+原則、Operations Hookを使用し、コンポーネントから直接repositoryやzustandを触らない
 
 ### 3. データ管理パターン
 
@@ -202,11 +231,6 @@ const sendMessage = async (sessionId, content) => {
   await repository.createMessage(userMessage);
 };
 ```
-
-**利点**:
-- UI反応速度が高速（メモリアクセス）
-- 永続化とUI更新のタイミングを制御可能
-- ストリーミング中も細かく状態更新可能
 
 #### ストリーミング処理
 
@@ -275,12 +299,7 @@ import { z } from 'zod';
 
 export const chatRequestSchema = z.object({
   prompt: z.string(),
-  history: z.array(z.object({
-    role: z.enum(['user', 'assistant']),
-    content: z.string(),
-  })),
-  llmProvider: z.string(),
-  useWebSearch: z.boolean(),
+  // ...その他
 });
 
 export const chatResponseDeltaSchema = z.object({
@@ -299,23 +318,6 @@ import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 
 const app = new Hono().basePath('/api').route('/', chatRoutes);
-
-export const GET = handle(app);
-export const POST = handle(app);
-
-// 型定義をエクスポート（RPCクライアントで使用）
-export type AppType = typeof app;
-```
-
-#### RPCクライアント（lib/apiClient/index.ts）
-
-Hono RPCクライアントで型安全なAPI呼び出しを行います。
-
-```typescript
-import { hc } from 'hono/client';
-import type { AppType } from '@/app/api/[...route]/route';
-
-export const apiClient = hc<AppType>('/').api;
 ```
 
 #### 利用（Operations Hook内）
@@ -326,22 +328,12 @@ await fetchStream(
   apiClient.chat.$post({ // TypeScriptが型チェック
     json: {
       prompt: content,
-      history: messages,
-      llmProvider: 'gemini-flash', // 型安全
-      useWebSearch: true,
+      ...
     }
   }),
   { onStream: ... }
 );
 ```
-
-#### 利点
-
-- **型安全**: TypeScriptの型がクライアント/サーバーで自動共有
-- **バリデーション**: Zodで実行時にリクエストを検証
-- **スキーマファースト**: スキーマが単一の真実の源
-- **RPC風**: `apiClient.chat.$post()`で直感的な呼び出し
-- **エディタ補完**: パラメータ、戻り値が補完される
 
 ### 5. Repository パターン
 
@@ -356,32 +348,16 @@ await fetchStream(
 export interface ChatRepository {
   // セッション操作
   findAllSessions(): Promise<ChatSession[]>;
-  createSession(session: ChatSession): Promise<void>;
-  updateSessionTitle(sessionId: string, title: string): Promise<void>;
+  // ...その他
 
   // メッセージ操作
-  findMessagesBySessionId(sessionId: string): Promise<Message[]>;
   createMessage(message: Message): Promise<void>;
-  updateMessage(messageId: string, updates: Partial<Message>): Promise<void>;
+  // ...その他
 }
 
 export class DexieChatRepository implements ChatRepository {
-  async findAllSessions(): Promise<ChatSession[]> {
-    return await db.chatSessions
-      .orderBy('metadata.updatedAt')
-      .reverse()
-      .toArray();
-  }
-
   async createMessage(message: Message): Promise<void> {
     await db.messages.add(message);
-  }
-
-  async updateSessionTitle(sessionId: string, title: string): Promise<void> {
-    await db.chatSessions.update(sessionId, {
-      title,
-      'metadata.updatedAt': Date.now(),
-    });
   }
   // ... その他
 }
@@ -417,56 +393,3 @@ export default function Providers({ children }) {
   );
 }
 ```
-
-#### 利点
-
-- **テスタビリティ**: モックRepositoryに差し替え可能
-- **DB実装の切り替え**: Dexie → 他のDB実装も容易
-- **型安全**: TypeScriptでデータアクセスを保証
-- **関心の分離**: DB詳細をビジネスロジックから隠蔽
-
-### 6. UI/UX & API通信
-
-- ユーザーフィードバック: `isLoading`時はローディング表示
-- エラーハンドリング: わかりやすいエラーメッセージ
-- AbortController: ストリーミング/長時間リクエストには`AbortSignal`を実装
-
----
-
-## 開発原則
-
-新規機能実装時は、以下の原則に従ってください:
-
-1. **コンポーネントにロジックを書かない**
-   - すべてOperations HookとZustand Storeに委譲
-   - Component内の`useState`は最小限（入力フィールドなど）
-
-2. **状態はZustandで管理**
-   - グローバル状態はZustand Store
-   - Immer middlewareで不変更新を簡潔に
-   - 永続化が必要な状態のみDBにも保存
-
-3. **Operations Hookで統合**
-   - 複数のRepository操作、Zustand更新、API呼び出しを1つのHookにまとめる
-   - Componentは1つのOperations Hookのみ呼び出す
-
-4. **ZustandとDBを同期**
-   - Operations内でメモリ更新（Zustand）→ DB永続化の順序保証
-   - ストリーミング中は細かくZustand更新、完了後にDB永続化
-
-5. **型安全性を最優先**
-   - Hono RPC で型を自動共有
-   - Zod でスキーマを定義
-   - TypeScriptの型チェックを最大限活用
-
-6. **汎用化は後回し（YAGNI原則）**
-   - まず機能固有で実装
-   - 必要になってから汎用化を検討
-   - lib/への移動は慎重に判断
-
---
-
-## 外部リソース
-
-- [Hono RPC](https://hono.dev/llms.txt)
-- [ax-llm/ax](https://axllm.dev/llm.txt)
